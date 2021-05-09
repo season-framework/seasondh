@@ -12,10 +12,10 @@ spec.loader.exec_module(version)
 setup(
     name='seasondh',
     version=version.VERSION_STRING,
-    description='A.I. Data Hub',
+    description='season datahub platform',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown', 
-    url='https://www.season.co.kr',
+    url='https://github.com/season-framework/seasondh',
     author='proin',
     author_email='proin@season.co.kr',
     license='MIT',

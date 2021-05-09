@@ -25,12 +25,13 @@ class dataset:
 
         self.fs = storage.FileSystem(basepath=self.BASEPATH)
         self.package = json.loads(self.fs.read(filepath=PACKAGE_FILE, pkl=False, default=stdClass()))
+        
+        if 'dataloader' not in self.package: raise Exception('Data Loader must be defined')
+        if 'apps' not in self.package: self.package['apps'] = []
+
         self.appsmap = dict()
         for app in self.package['apps']:
             self.appsmap[app['id']] = app
-
-        if 'dataloader' not in self.package: raise Exception('Data Loader must be defined')
-        if 'apps' not in self.package: self.package['apps'] = []
 
     def __getitem__(self, index):
         datafs = storage.FileSystem(basepath=self.DATAPATH)
@@ -102,7 +103,25 @@ class dataset:
             datafs.write(filepath="batch_" + str(index) + '.pkl', data=batch)
         return batch
 
-    def process_app(self, app_index=0, batch_index=0, **kwargs):
+    def process_app(self, app_id=None, batch_index=0, use_cache=False, **kwargs):
+        if app_id is None: raise Exception('Out of Index: Apps')
+
+        app_index = 0
+        for app in self.package['apps']:
+            if app['id'] == app_id:
+                break
+            app_index = app_index + 1
+
+        if use_cache:
+            if app_index == len(self.package['apps']) - 1:
+                datafs = storage.FileSystem(basepath=self.DATAPATH)
+                return datafs.read(filepath="batch_" + str(batch_index) + '.pkl')
+            else:
+                app_id = app['id']
+                cachepath = os.path.join(self.CACHEPATH, app_id)
+                cachefs = storage.FileSystem(basepath=cachepath)
+                return cachefs.read(filepath=f'batch_{batch_index}.pkl')
+
         dataloader = self.getDataLoader()
         if len(dataloader) <= batch_index: raise Exception('Out of Index: DataLoader')
         if len(self.package['apps']) <= app_index: raise Exception('Out of Index: Apps')
@@ -133,7 +152,15 @@ class dataset:
 
         return batch
 
-    def clear(mode=None):
+    def find_app(self, app_id):
+        if self.package['dataloader']['id'] == app_id:
+            return self.package['dataloader']
+        for app in self.package['apps']:
+            if app['id'] == app_id:
+                return app
+        return None
+
+    def clear(self, mode=None):
         if mode == 'cache': shutil.rmtree(self.CACHEPATH)
         if mode == 'data': shutil.rmtree(self.DATAPATH)
         if mode is None:
@@ -141,5 +168,5 @@ class dataset:
             shutil.rmtree(self.CACHEPATH)
             shutil.rmtree(self.DATAPATH)
         
-    def count():
+    def count(self):
         return len(self.getDataLoader())
