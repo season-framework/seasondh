@@ -34,8 +34,11 @@ class BaseDataLoader(metaclass=ABCMeta):
 class BaseProcess(metaclass=ABCMeta):
 
     def __init__(self, **kwargs):
-        self.options = kwargs
+        self.kwargs = self.options = kwargs
+
+    def __process__(self, batch):
+        return self.process(batch, **self.kwargs)
     
     @abstractmethod
-    def process(self, batch):
+    def process(self, batch, **kwargs):
         pass
