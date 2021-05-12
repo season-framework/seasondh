@@ -3,6 +3,7 @@ from .storage import *
 from .base import Configuration
 from .base import stdClass
 
+import zipfile
 import os
 import shutil
 import json
@@ -33,6 +34,21 @@ class dataset:
         self.appsmap = dict()
         for app in self.package['apps']:
             self.appsmap[app['id']] = app
+
+    def __walkdir__(self, dirname, include_all=True):
+        result = []
+        for root, dirs, files in os.walk(dirname):
+            for filename in files:
+                if filename.startswith('.'): continue
+                abspath = os.path.join(root, filename)
+                relpath = os.path.relpath(abspath, dirname)
+
+                isinclude = True
+                if include_all is False:
+                    if relpath.startswith('cache/') or relpath.startswith('input/'):
+                        isinclude = False
+                if isinclude: result.append((abspath, relpath))
+        return result
 
     def __getitem__(self, index):
         use_cache = True
@@ -218,3 +234,13 @@ class dataset:
         
     def count(self):
         return len(self.getDataLoader())
+
+    def zip(self, FILEPATH, include_all=True):
+        DATASET_PATH = self.BASEPATH
+        targets = self.__walkdir__(DATASET_PATH, include_all=include_all)
+        dataset_zip = zipfile.ZipFile(FILEPATH, 'w')
+        for target in targets:
+            abspath, relpath = target
+            dataset_zip.write(abspath, relpath, compress_type=zipfile.ZIP_DEFLATED)
+        dataset_zip.close()
+        return FILEPATH
