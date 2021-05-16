@@ -36,8 +36,8 @@ class BaseProcess(metaclass=ABCMeta):
     def __init__(self, **kwargs):
         self.kwargs = self.options = kwargs
 
-    def __process__(self, batch):
-        return self.process(batch, **self.kwargs)
+    def __process__(self, batch, **kwargs):
+        return self.process(batch, **kwargs)
     
     @abstractmethod
     def process(self, batch, **kwargs):
