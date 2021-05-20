@@ -1,7 +1,7 @@
 from .interfaces import *
 from .storage import *
-from .base import Configuration
 from .base import stdClass
+from .version import VERSION_STRING
 
 import gc
 import zipfile
@@ -9,34 +9,20 @@ import os
 import shutil
 import json
 
-PACKAGE_FILE = 'seasondh.json'
+__PACKAGEFILENAME__ = 'seasondh.json'
 
-def parse_json(jsonstr, default=None):
-    try:
-        return json.loads(jsonstr)
-    except:
-        return default
+version = VERSION_STRING
 
-class dataset:
-    def __init__(self, basepath, **kwargs):
-        self.config = Configuration(**kwargs)
-        self.kwargs = kwargs
-        self.BASEPATH = os.path.join(basepath)
-        self.INPUTPATH = os.path.join(self.BASEPATH, 'input')
-        self.DATAPATH = os.path.join(self.BASEPATH, 'data')
-        self.CACHEPATH = os.path.join(self.BASEPATH, 'cache')
+# utils
+class __util__:
 
-        self.fs = storage.FileSystem(basepath=self.BASEPATH)
-        self.package = json.loads(self.fs.read(filepath=PACKAGE_FILE, pkl=False, default=stdClass()))
-        
-        if 'dataloader' not in self.package: raise Exception('Data Loader must be defined')
-        if 'apps' not in self.package: self.package['apps'] = []
+    def parse_json(self, jsonstr, default=None):
+        try:
+            return json.loads(jsonstr)
+        except:
+            return default
 
-        self.appsmap = dict()
-        for app in self.package['apps']:
-            self.appsmap[app['id']] = app
-
-    def __walkdir__(self, dirname, mode='all'):
+    def walkdir(self, dirname, mode='all'):
         result = []
         for root, dirs, files in os.walk(dirname):
             for filename in files:
@@ -52,188 +38,74 @@ class dataset:
 
         return result
 
-    def __getitem__(self, index):
-        use_cache = False
-        forced = False
-        if 'use_cache' in self.kwargs: use_cache = self.kwargs['use_cache']
-        if 'forced' in self.kwargs: forced = self.kwargs['forced']
-        
-        datafs = storage.FileSystem(basepath=self.DATAPATH)
-        batch = None
-        if use_cache:
-            try:
-                batch = datafs.read(filepath="batch_" + str(index) + '.pkl')
-            except:
-                pass
-        if batch is None:
-            batch = self.process_batch(index, **self.kwargs)
-        return batch
-    
-    def __len__(self):
-        try:
-            return self.count()
-        except:
-            pass
-
-        lastfname = ""
-        for root, dirs, files in os.walk(self.DATAPATH):
-            for filename in files:
-                lastfname = filename
-        return int(lastfname.split('_')[1].split('.')[0])
-
-    def __build_function__(self, function_str, loadclass=None):
+    def build_function(self, function_str, loadclass=None):
         fn = {}
         exec(function_str, fn)
         if loadclass is not None: 
             if loadclass not in fn: return None
             return fn[loadclass]
         return fn
-        
-    # get Storage
-    def getStorage(self, **kwargs):
-        return self.get_storage(**kwargs)
 
-    def get_storage(self, app_id='dataloader'):
-        if app_id == 'dataloader':
-            return storage.FileSystem(basepath=os.path.join(self.INPUTPATH, 'dataloader'))
+__util__ = __util__()
 
-        if app_id in self.appsmap:
-            app = self.appsmap[app_id]
-            return storage.FileSystem(basepath=os.path.join(self.INPUTPATH, app['id']))
+# dataset definition
+class dataset:
 
+    __defaultoptions__ = {
+        "cache": True
+    }
+
+    def option(self, key):
+        if key in self.__kwargs__:
+            return self.__kwargs__[key]
+        if key in self.__defaultoptions__:
+            return self.__defaultoptions__[key]
         return None
 
-    # get dataloader
-    def getDataLoader(self, **kwargs):
-        return self.get_dataloader(**kwargs)
+    # set options
+    def setOption(self, **kwargs):
+        return self.set_option(**kwargs)
 
-    def get_dataloader(self, **kwargs):
-        dataloaderclass = self.__build_function__(self.package['dataloader']['code'], loadclass='DataLoader')
-        for key in self.kwargs:
-            kwargs[key] = self.kwargs[key]
-        kwargs['storage'] = self.getStorage()
-        return dataloaderclass(**kwargs)
+    def set_option(self, **kwargs):
+        for key in kwargs:
+            self.__kwargs__[key] = kwargs[key]
+        return self
 
-    #get previous batch 
-    def getPreviousBatch(self, **kwargs):
-        return self.get_previous_batch(**kwargs)
+    # init class instance
+    def __init__(self, basepath, **kwargs):
+        self.__kwargs__ = kwargs
 
-    def get_previous_batch(self, app_id=None, batch_index=0, **kwargs):
-        if app_id is None: raise Exception('Out of Index: Apps')
+        self.BASEPATH = os.path.join(basepath)
+        self.INPUTPATH = os.path.join(self.BASEPATH, 'input')
+        self.DATAPATH = os.path.join(self.BASEPATH, 'data')
+        self.CACHEPATH = os.path.join(self.BASEPATH, 'cache')
 
-        app_index = 0
+        basefs = storage.FileSystem(basepath=self.BASEPATH)
+        self.package = json.loads(basefs.read(filepath=__PACKAGEFILENAME__, pkl=False, default=stdClass()))
+        
+        if 'dataloader' not in self.package: raise Exception('Data Loader must be defined')
+        if 'apps' not in self.package: self.package['apps'] = []
+
+        self.__appsmap__ = dict()
         for app in self.package['apps']:
-            if app['id'] == app_id:
-                break
-            app_index = app_index + 1
-
-        if app_index == 0: 
-            dataloader = self.getDataLoader()
-            batch = dataloader[batch_index]
-        else:
-            prevapp = self.package['apps'][app_index - 1]
-            prevapp_id = prevapp['id']
-            prevcachepath = os.path.join(self.CACHEPATH, prevapp_id)
-            prevcachefs = storage.FileSystem(basepath=prevcachepath)
-            batch = prevcachefs.read(filepath=f'batch_{batch_index}.pkl')
-
-        return batch
-
-    # process all
-    def process(self, **kwargs):
-        args = dict()
-        dataloader = self.getDataLoader()
-        for batch_index in range(len(dataloader)):
-            self.process_batch(batch_index, **kwargs)
+            self.__appsmap__[app['id']] = app
     
-    # process for batch
-    def processBatch(self, index, **kwargs):
-        return self.process_batch(index, **kwargs)
+    # get Apps
+    def getApps(self):
+        return self.get_apps()
 
-    def process_batch(self, index, **kwargs):
-        args = dict()
-        batch = None
-        
-        if len(self.package['apps']) == 0:
-            dataloader = self.getDataLoader()
-            batch = dataloader[index]
+    def get_apps(self):
+        apps = self.package['apps']
+        result = []
+        for app in apps:
+            result.append(app['id'])
+        return result
 
-        for app in self.package['apps']:
-            batch = self.process_app(app_id=app['id'], batch_index=index, **kwargs)
-            if batch is None:
-                kwargs['use_cache'] = False
-                batch = self.process_app(app_id=app['id'], batch_index=index, **kwargs)
-                
-        if batch is not None:
-            datafs = storage.FileSystem(basepath=self.DATAPATH)
-            datafs.write(filepath="batch_" + str(index) + '.pkl', data=batch)
-        return batch
+    # get app
+    def getApp(self, app_id):
+        return self.get_app(app_id) 
 
-    # process for single app
-    def processApp(self, **kwargs):
-        return self.process_app(**kwargs)
-
-    def process_app(self, app_id=None, batch_index=0, use_cache=True, forced=False, **kwargs):
-        if app_id is None: raise Exception('Out of Index: Apps')
-
-        app_index = 0
-        for app in self.package['apps']:
-            if app['id'] == app_id:
-                break
-            app_index = app_index + 1
-
-        if use_cache and forced is False:
-            app_id = app['id']
-            cachepath = os.path.join(self.CACHEPATH, app_id)
-            cachefs = storage.FileSystem(basepath=cachepath)
-            cache = cachefs.read(filepath=f'batch_{batch_index}.pkl')
-            if cache is not None:
-                return cache
-
-        dataloader = self.getDataLoader()
-        if len(dataloader) <= batch_index: raise Exception('Out of Index: DataLoader')
-        if len(self.package['apps']) <= app_index: raise Exception('Out of Index: Apps')
-        
-        if app_index == 0: 
-            batch = dataloader[batch_index]
-        else:
-            prevapp = self.package['apps'][app_index - 1]
-            prevapp_id = prevapp['id']
-            prevcachepath = os.path.join(self.CACHEPATH, prevapp_id)
-            prevcachefs = storage.FileSystem(basepath=prevcachepath)
-            batch = prevcachefs.read(filepath=f'batch_{batch_index}.pkl')
-            
-        if batch is None: raise Exception('Process Error: Cache not found for previous app.')
-
-        app = self.package['apps'][app_index]
-
-        kwargs['index'] = batch_index
-        res_batch = self.__process_app__(app, batch, **kwargs)
-        
-        app_id = app['id']
-        cachepath = os.path.join(self.CACHEPATH, app_id)
-        cachefs = storage.FileSystem(basepath=cachepath)
-        cachefs.write(filepath=f'batch_{batch_index}.pkl', data=res_batch)
-
-        return batch
-
-    # process basic fn 
-    def __process_app__(self, app, batch, **kwargs):
-        appclass = self.__build_function__(app['code'], loadclass='DataProcess')
-        if 'options' in app:
-            for key in app['options']:
-                kwargs[key] = app['options'][key]
-        
-        kwargs['storage'] = self.getStorage(app_id=app['id'])
-        appinstance = appclass(**kwargs)
-        return appinstance.__process__(batch, **kwargs)
-
-
-    # find app
-    def findApp(self, app_id):
-        return self.find_app(app_id) 
-
-    def find_app(self, app_id):
+    def get_app(self, app_id):
         if self.package['dataloader']['id'] == app_id:
             return self.package['dataloader']
         for app in self.package['apps']:
@@ -241,24 +113,194 @@ class dataset:
                 return app
         return None
 
-    # dataset clear
-    def clear(self, mode=None):
-        if mode == 'cache': shutil.rmtree(self.CACHEPATH)
-        if mode == 'data': shutil.rmtree(self.DATAPATH)
-        if mode == 'input': shutil.rmtree(self.INPUTPATH)
-        if mode is None:
-            shutil.rmtree(self.CACHEPATH)
-            shutil.rmtree(self.DATAPATH)
-        
-    def count(self):
-        return len(self.getDataLoader())
+    # input storage api
+    def getStorage(self, app_id="dataloader"):
+        return self.get_storage(app_id)
 
+    def get_storage(self, app_id="dataloader"):
+        if app_id == 'dataloader':
+            return storage.FileSystem(basepath=os.path.join(self.INPUTPATH, 'dataloader'))
+        if app_id in self.__appsmap__:
+            app = self.__appsmap__[app_id]
+            return storage.FileSystem(basepath=os.path.join(self.INPUTPATH, app['id']))
+        return None
+
+    # data loader api
+    def getDataLoader(self):
+        return self.get_dataloader()
+
+    def getDataloader(self):
+        return self.get_dataloader()
+
+    def get_dataloader(self):
+        kwargs = dict()
+        kwargs['dataset'] = self
+        kwargs['storage'] = self.getStorage()
+        dataloaderclass = __util__.build_function(self.package['dataloader']['code'], loadclass='DataLoader')
+        return dataloaderclass(**kwargs)
+
+    #get previous batch 
+    def getPreviousBatch(self, **kwargs):
+        return self.get_previous_batch(**kwargs)
+
+    def get_previous_batch(self, app_id=None, batch_index=0):
+        if app_id is None: raise Exception('Out of Index: Apps')
+        cache = self.option('cache')
+        dataloader = self.getDataLoader()
+
+        app_index = 0
+        for app in self.package['apps']:
+            if app['id'] == app_id:
+                break
+            app_index = app_index + 1
+
+        app_index = app_index - 1
+
+        if app_index < 0:
+            if cache:
+                CACHEPATH = os.path.join(self.CACHEPATH, 'dataloader')
+                batchfs = storage.FileSystem(basepath=CACHEPATH)
+                batch = batchfs.read(filepath=f'batch_{batch_index}.pkl')
+                if batch is not None:
+                    return batch
+            return dataloader[batch_index]
+        else:
+            app_id = self.package['apps'][app_index]['id']
+
+        return self.run(app_id=app_id, batch_index=batch_index)
+
+    # process api
+    def run(self, app_id=None, batch_index=0):
+        cache = self.option('cache')
+        dataloader = self.getDataLoader()
+        batch = None
+
+        APP_COUNT = len(self.package['apps'])
+        CACHEPATH = None
+
+        # check batch index
+        if len(dataloader) <= batch_index: 
+            raise Exception('Out of Index: DataLoader')
+
+        if APP_COUNT == 0:
+            if cache:
+                CACHEPATH = os.path.join(self.CACHEPATH, 'dataloader')
+                batchfs = storage.FileSystem(basepath=CACHEPATH)
+                batch = batchfs.read(filepath=f'batch_{batch_index}.pkl')
+                if batch is not None:
+                    return batch
+            return dataloader[batch_index]
+
+        # find app index
+        app_index = 0
+        if app_id is None: 
+            app_index = APP_COUNT - 1
+            app_id = self.package['apps'][app_index]['id']
+        else:
+            for app in self.package['apps']:
+                if app['id'] == app_id:
+                    break
+                app_index = app_index + 1
+
+        if app_index < 0 or app_index >= APP_COUNT:
+            raise Exception('Out of Index: Apps')
+
+        # set cache path
+        if app_index >= APP_COUNT - 1:
+            CACHEPATH = self.DATAPATH
+        else:
+            CACHEPATH = os.path.join(self.CACHEPATH, app_id)
+
+        # return cache data, if use cache
+        if cache:
+            cachefs = storage.FileSystem(basepath=CACHEPATH)
+            batch = cachefs.read(filepath=f'batch_{batch_index}.pkl')
+            if batch is not None:
+                return batch
+        
+        # find previous app
+        prevapp_id = None
+        if app_index > 0:
+            prevapp = self.package['apps'][app_index - 1]
+            prevapp_id = prevapp['id']
+        elif app_index == 0:
+            prevapp_id = 'dataloader'
+        else:
+            raise Exception('Out of Index: Apps')
+
+        # load previous batch, if use cache
+        if cache:
+            previousbatchpath = os.path.join(self.CACHEPATH, prevapp_id)
+            previousbatchfs = storage.FileSystem(basepath=previousbatchpath)
+            batch = previousbatchfs.read(filepath=f'batch_{batch_index}.pkl')
+
+        # load batch, if batch is none
+        if batch is None:
+            if app_index == 0:
+                batch = dataloader[batch_index]
+            else:
+                batch = self.run(app_id=prevapp_id, batch_index=batch_index)
+
+        if batch is None:
+            raise Exception('Process Error: unable build batch')
+
+        app = self.package['apps'][app_index]
+
+        appclass = __util__.build_function(app['code'], loadclass='DataProcess')
+        appopts = dict()
+        appopts['index'] = batch_index
+        appopts['dataset'] = self
+        appopts['storage'] = self.getStorage(app_id)
+        appinstance = appclass(**appopts)
+
+        batch = appinstance.__process__(batch, **appopts)
+
+        # if cache save mode
+        if cache and batch is not None:
+            cachefs = storage.FileSystem(basepath=CACHEPATH)
+            cachefs.write(filepath=f'batch_{batch_index}.pkl', data=batch)
+
+        return batch
+
+    # dataset clear
+    def clear(self, mode='cache'):
+        try:
+            if mode == 'cache': 
+                shutil.rmtree(self.CACHEPATH)
+                shutil.rmtree(self.DATAPATH)
+            if mode == 'storage': 
+                shutil.rmtree(self.INPUTPATH)
+        except:
+            pass
+        return self
+
+    # create zip file
     def zip(self, FILEPATH, mode=None):
         DATASET_PATH = self.BASEPATH
-        targets = self.__walkdir__(DATASET_PATH, mode=mode)
+        targets = __util__.walkdir(DATASET_PATH, mode=mode)
         dataset_zip = zipfile.ZipFile(FILEPATH, 'w')
         for target in targets:
             abspath, relpath = target
             dataset_zip.write(abspath, relpath, compress_type=zipfile.ZIP_DEFLATED)
         dataset_zip.close()
         return FILEPATH
+
+    # array api
+    def __getitem__(self, index):
+        return self.run(batch_index=index)
+
+    def __len__(self):
+        try:
+            return len(self.getDataLoader())
+        except:
+            pass
+
+        lastfname = ""
+        maxsize = 0
+        for root, dirs, files in os.walk(self.DATAPATH):
+            for filename in files:
+                lastfname = filename
+                s = int(lastfname.split('_')[1].split('.')[0]) + 1
+                if s > maxsize:
+                    maxsize = s
+        return maxsize

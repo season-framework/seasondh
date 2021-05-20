@@ -4,23 +4,23 @@ import pickle
 class BaseDataLoader(metaclass=ABCMeta):
 
     def __init__(self, **kwargs):
-        self.options = kwargs
+        self.kwargs = self.options = kwargs
         self.build(**kwargs)
 
     def __getitem__(self, index):
         if index >= len(self):
             raise IndexError
-        return self.get(index)
+        return self.get(index, **self.kwargs)
     
     def __len__(self):
-        return self.count()
+        return self.count(**self.kwargs)
     
     @abstractmethod
     def build(self, **kwargs):
         pass
 
     @abstractmethod
-    def get(self, index):
+    def get(self, index, **kwargs):
         pass
 
     @abstractmethod
@@ -28,7 +28,7 @@ class BaseDataLoader(metaclass=ABCMeta):
         pass
     
     @abstractmethod
-    def count(self):
+    def count(self, **kwargs):
         pass
 
 class BaseProcess(metaclass=ABCMeta):
