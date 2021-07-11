@@ -1,0 +1,34 @@
+@font-face {
+    font-family: 'SEASONEB';
+    src: url('/resources/font/EB.otf') format('truetype');
+    font-style: normal;
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: 'SEASONR';
+    src: url('/resources/font/R.otf') format('truetype');
+    font-style: normal;
+    font-weight: normal;
+}
+
+body {
+    font-family: 'SEASONR';
+}
+
+/* .navbar .container {
+    max-width: none;
+} */
+
+.bold {
+    font-family: SEASONEB;
+}
+
+input[type='password'] {
+    font-family: monospace !important;
+}
+
+iframe {
+    border: none;
+    width: 100%;
+}

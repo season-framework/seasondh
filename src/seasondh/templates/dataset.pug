@@ -1,0 +1,147 @@
+mixin content()
+    script.
+        var dataset_id = '{{dataset_id}}';
+
+    .fixed-top
+        header.navbar.navbar-expand-md.navbar-light
+            .container
+                button.navbar-toggler(type='button' data-toggle='collapse' data-target='#navbar-menu')
+                    span.navbar-toggler-icon
+
+                a.navbar-brand.navbar-brand-autodark.d-none-navbar-horizontal.pr-0.pr-md-3(href='/')
+                    div(style='color: #7d7c83;')
+                        img.mr-2(src='/resources/img/logo.png' style='height: 24px;')
+                        span.bold(style='vertical-align: sub; display: inline-block; font-size: 16px;') DATAHUB
+
+                #navbar-menu.navbar.navbar-collapse.collapse
+                    ul.navbar-nav
+                    .navbar-nav.flex-row.order-md-last.mr-2
+                        li.nav-item
+                            a.nav-link.btn.btn-sm.text-white.btn-dark.btn-pill(href='/api/auth/logout')
+                                span.nav-link-title.bold LOGOUT
+
+    .container.pt-4(style="padding-top: 84px !important;")
+        .row 
+            .col-md-9
+                .text-center
+                    .card.card-sm
+                        .card-status-bottom.bg-dark
+                        .card-header.bg-dark.text-white
+                            h2.card-title Data Loader
+                            .ml-auto 
+                                button.btn.btn-sm.btn-dark.mr-1(ng-click="event.click.item(info.dataloader)")
+                                    i.fas.fa-edit
+                                button.btn.btn-sm.btn-dark.mr-1(ng-click="event.reload(info.dataloader)")
+                                    i.fas.fa-retweet(style='font-size: 13px; padding: 2px;')
+                                .btn.btn-sm.btn-dark.mr-1(ng-click="event.fullscreen(info.dataloader)")
+                                    i.fas.fa-expand(style='font-size: 13px; padding: 2px;')
+
+                        .card-body.p-0(ng-show="!options.minify[info.dataloader.id]" style="min-height: 300px; overflow: hidden;")
+                            iframe(id="iframe-{{ng('info.dataloader.id')}}" style="height: 100%;")
+
+                    i.fas.fa-arrow-circle-down.mb-3(style="font-size: 32px;")
+
+                .text-center(ng-repeat="app in info.apps track by $index")
+                    .card.card-sm.mb-3
+                        .card-status-bottom.bg-dark
+                        .card-header.bg-dark.text-white
+                            h2.card-title= ng('app.title')
+                            .ml-auto 
+                                button.btn.btn-sm.btn-dark.mr-1(ng-click="info.apps.remove(app)")
+                                    i.fas.fa-trash
+                                button.btn.btn-sm.btn-dark.mr-1(ng-click="event.click.item(app)")
+                                    i.fas.fa-edit
+                                button.btn.btn-sm.btn-dark.mr-1(ng-click="event.reload(app)") 
+                                    i.fas.fa-retweet(style='font-size: 13px; padding: 2px;')
+                                button.btn.btn-sm.btn-dark.mr-1(ng-click="event.fullscreen(app)")
+                                    i.fas.fa-expand(style='font-size: 13px; padding: 2px;')
+
+                        .card-body.p-0(ng-show="!options.minify[app.id]" style="min-height: 300px; overflow: hidden;")
+                            iframe(id="iframe-{{ng('app.id')}}" style="height: 100%;")
+
+                    i.fas.fa-arrow-circle-down.mb-3(style="font-size: 32px;")
+                        
+                .card.card-sm.card-hover.cursor-pointer(ng-click="event.add()" style="margin-bottom: 640px;")
+                    .card-body.text-center.p-4
+                        button.btn.btn-dark New App
+
+            .col-md-3
+                .card.card-sm.mb-3
+                    .card-header.p-2.pl-3.pr-3
+                        span Dataset ID
+                    .card-body 
+                        input.form-control(type="text" ng-model="info.id" disabled)
+                
+                .card.card-sm.mb-3
+                    .card-header.p-2.pl-3.pr-3
+                        span Dataset Title
+                    .card-body 
+                        input.form-control(type="text" ng-model="info.title" placeholder="Title")
+
+                .card.card-sm.mb-3
+                    .card-header.p-2.pl-3.pr-3
+                        span Save Dataset
+                    .card-body 
+                        button.btn.btn-dark.btn-block(ng-click="event.save()") Save
+
+                .card.card-sm.mb-3
+                    .card-header.p-2.pl-3.pr-3
+                        span Delete Dataset
+                    .card-body(ng-if="allow_delete")
+                        | Are you sure to delete this dataset?
+                    .card-body
+                        button.btn.btn-outline-danger.btn-block(ng-if="!allow_delete" ng-click="event.delete()") Delete
+                        button.btn.btn-danger.btn-block(ng-if="allow_delete" ng-click="event.delete()") Delete
+
+    .modal.fade#modal-dataprocess(tabindex="-1" aria-labelledby="modal-dataprocess" aria-hidden="true")
+        .modal-dialog.modal-lg.fullscreen(role='document')
+            .modal-content(style="border: none;")
+                .modal-header.bg-dark.text-white(style="z-index: 1001;")
+                    h5.modal-title Data Process: {{ng('data.dataprocess_app.title')}}
+                    button.close.text-white(type='button' data-dismiss='modal' aria-label='Close' style="opacity: 1; width: 3.5rem; height: 3.5rem;")
+                        i.fas.fa-times.text-white
+
+                .modal-body.p-0
+                    .code-preview(style="max-width: none; width: 100%; height: 100%;")
+                        iframe#dataprocess-iframe(style="height: 100%;")
+
+    style.
+        iframe {
+            border: none;
+            width: 100%;
+        }
+
+        #modal-dataprocess .modal-dialog.modal-lg {
+            max-width: 1024px;
+            margin-top: 2vh;
+        }
+
+        #modal-dataprocess .modal-body {
+            height: 85vh;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        #modal-dataprocess .fullscreen {
+            max-width: 100% !important;
+            margin: 0 !important;
+        }
+        
+        #modal-dataprocess .fullscreen .modal-content, .modal-header {
+            border-radius: 0;
+        }
+
+        #modal-dataprocess .fullscreen .modal-body {
+            height: 100vh;
+            padding-top: 56px !important;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+            
+                            
+    script(src='/resources/view/js/dataset.js')
+    
+include component/layout
++layout

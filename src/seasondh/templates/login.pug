@@ -1,0 +1,24 @@
+mixin content()
+    header.navbar.navbar-expand-md.navbar-light
+        .container
+            button.navbar-toggler(type='button' data-toggle='collapse' data-target='#navbar-menu')
+                span.navbar-toggler-icon
+
+            a.navbar-brand.navbar-brand-autodark.d-none-navbar-horizontal.pr-0.pr-md-3(href='/')
+                div(style='color: #7d7c83;')
+                    img.mr-2(src='/resources/img/logo.png' style='height: 24px;')
+                    span.bold(style='vertical-align: sub; display: inline-block; font-size: 16px;') DATAHUB
+
+    .text-center(style="padding: 20vh 0; width: 100%; max-width: 600px; margin: 0 auto;") 
+        .row 
+            .col-md-3.text-right Password
+            .col-md-6
+                input.form-control(type="password" placeholder="Password" ng-model="password" ng-enter="event.login(password)")
+            .col-md-3 
+                button.btn.btn-block.btn-dark(ng-click="event.login(password)") Log In
+        
+                            
+    script(src='/resources/view/js/login.js')
+    
+include component/layout
++layout

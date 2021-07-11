@@ -4,6 +4,9 @@ from .base import Configuration
 import os
 import pymysql
 import pickle
+import json
+import datetime
+import shutil
 
 def join(v, f='/'):
     if len(v) == 0:
@@ -282,81 +285,48 @@ class MySQL:
         except Exception as e:
             return False, e
 
-
 class FileSystem:
-    def __init__(self, **kwargs):
-        self.config = Configuration(**kwargs)
-        required = 'basepath'.split(',')
-        for key in required:
-            if self.config[key] is None:
-                raise Exception(f'required option: {key}')
-        self.filepath = self.config.filepath
+    def __init__(self, basepath):
+        self.basepath = basepath
 
-    def files(self, page=None, dump=20):
-        files = os.listdir(self.config.basepath)
-        if page is None:
-            return files
-        page = (page - 1) * dump
-        return files[page:page+dump]
-
-    def count(self, **args):
-        files = os.listdir(self.config.basepath)
-        return len(files)
-
-    def write(self, filepath=None, data=None):
-        # file mode
-        if data is None: raise Exception('must set ,data=data')
+    def __json__(self, jsonstr):
         try:
-            if filepath is None: filepath = data.filename
-            filepath = os.path.join(self.config.basepath, filepath)
-            self.makedirs(filepath)
-            data.save(filepath)
-            return filepath[len(self.config.basepath):]
-        except Exception as e:
-            if filepath is None: raise Exception('must set ,filepath=filepath')
-            filepath = os.path.join(self.config.basepath, str(filepath))
-            ext = os.path.splitext(filepath)[1]
-            if ext != '.pkl': filepath = filepath + '.pkl'
-            self.makedirs(filepath)
-            f = open(filepath, 'wb')
-            pickle.dump(data, f)
-            f.close()
-            return filepath[len(self.config.basepath):]
-
-    def read(self, filepath=None, pkl=False, default=None, as_filepath=False):
-        if filepath[:len(self.config.basepath)] == self.config.basepath:
-            filepath = filepath[len(self.config.basepath):]
-        filepath = os.path.join(self.config.basepath, filepath)
-
-        if as_filepath:
-            return filepath
-
-        try:
-            if os.path.isfile(filepath):
-                f = open(filepath, 'rb')
-                ext = os.path.splitext(filepath)[1]
-                if ext == '.pkl' or pkl is True:
-                    data = pickle.load(f)
-                else:
-                    data = f.read()
-                f.close()
-                return data
-            else:
-                return os.listdir(filepath)
+            return json.loads(jsonstr)
         except:
-            return default
+            return None
 
-    def delete(self, filepath=None):
-        if filepath[:len(self.config.basepath)] == self.config.basepath:
-            filepath = filepath[len(self.config.basepath):]
-        filepath = os.path.join(self.config.basepath, filepath)
-        if os.path.isfile(filepath):
-            try:
-                os.remove(filepath)
-                return True
-            except:
-                pass
-        return False
+    def __walkdir__(self, dirname):
+        result = []
+        for root, dirs, files in os.walk(dirname):
+            for filename in files:
+                if filename.startswith('.'): continue
+                abspath = os.path.join(root, filename)
+                result.append(abspath[len(self.basepath):])
+        return result
+
+    def files(self, filepath="", page=None, dump=20, recursive=False):
+        try:
+            abspath = self.abspath(filepath)
+            if recursive == True:
+                return self.__walkdir__(abspath)
+
+            files = os.listdir(abspath)
+            if page is None:
+                return files
+            page = (page - 1) * dump
+            return files[page:page+dump]
+        except:
+            return []
+
+    def count(self, filepath=""):
+        try:
+            abspath = self.abspath(filepath)
+            return len(os.listdir(abspath))
+        except:
+            return 0
+
+    def abspath(self, filepath):
+        return os.path.join(self.basepath, filepath)
 
     def makedirs(self, path):
         try:
@@ -364,3 +334,81 @@ class FileSystem:
             os.makedirs(filedir)
         except Exception as e:
             pass
+
+    # file write
+    def write(self, filepath, data):
+        self.write_text(filepath, data)
+
+    def write_text(self, filepath, data):
+        abspath = self.abspath(filepath)
+        self.makedirs(abspath)
+        f = open(abspath, 'w')
+        f.write(data)
+        f.close()
+
+    def write_json(self, filepath, obj):
+        def json_default(value):
+            if isinstance(value, datetime.date): 
+                return value.strftime('%Y-%m-%d %H:%M:%S')
+            return value
+
+        obj = json.dumps(obj, default=json_default)
+        abspath = self.abspath(filepath)
+        self.makedirs(abspath)
+        f = open(abspath, 'w')
+        f.write(obj)
+        f.close() 
+
+    def write_file(self, filepath, file):
+        abspath = self.abspath(filepath)
+        self.makedirs(abspath)
+        file.save(abspath)
+
+    def write_pickle(self, filepath, data):
+        abspath = self.abspath(filepath)
+        self.makedirs(abspath)
+        f = open(abspath, 'wb')
+        pickle.dump(data, f)
+        f.close()
+
+    # file read
+    def read(self, filepath):
+        return self.read_text(filepath)
+
+    def read_text(self, filepath):
+        abspath = self.abspath(filepath)
+        f = open(abspath, 'r')
+        data = f.read()
+        f.close()
+        return data
+
+    def read_json(self, filepath):
+        abspath = self.abspath(filepath)
+        f = open(abspath, 'r')
+        data = f.read()
+        f.close()
+        data = self.__json__(data)
+        return data
+
+    def read_pickle(self, filepath):
+        abspath = self.abspath(filepath)
+        f = open(abspath, 'rb')
+        data = pickle.load(f)
+        f.close()
+        return data
+
+    # remove file
+    def remove(self, filepath):
+        self.delete(filepath)
+
+    def delete(self, filepath):
+        abspath = self.abspath(filepath)
+        try:
+            shutil.rmtree(abspath)
+        except Exception as e:
+            print(e)
+            try:
+                os.remove(abspath)
+            except Exception as e:
+                return False
+        return True

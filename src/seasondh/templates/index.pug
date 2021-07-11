@@ -1,0 +1,38 @@
+mixin content()
+    header.navbar.navbar-expand-md.navbar-light
+        .container
+            button.navbar-toggler(type='button' data-toggle='collapse' data-target='#navbar-menu')
+                span.navbar-toggler-icon
+
+            a.navbar-brand.navbar-brand-autodark.d-none-navbar-horizontal.pr-0.pr-md-3(href='/')
+                div(style='color: #7d7c83;')
+                    img.mr-2(src='/resources/img/logo.png' style='height: 24px;')
+                    span.bold(style='vertical-align: sub; display: inline-block; font-size: 16px;') DATAHUB
+
+            #navbar-menu.navbar.navbar-collapse.collapse
+                ul.navbar-nav
+                .navbar-nav.flex-row.order-md-last.mr-2
+                    li.nav-item.mr-2
+                        a.nav-link.btn.btn-sm.text-white.btn-dark.btn-pill(href='/api/create')
+                            span.nav-link-title.bold Create Dataset
+                    li.nav-item
+                        a.nav-link.btn.btn-sm.text-white.btn-dark.btn-pill(href='/api/auth/logout')
+                            span.nav-link-title.bold LOGOUT
+
+    .container.pt-4(style="max-width: 860px;")
+        .card 
+            .card-table.table-responsive
+                table.table.table-vcenter.table-hover.m-0
+                    thead 
+                        tr 
+                            th Dataset Title
+                            th Dataset ID
+                    tbody 
+                        tr(ng-repeat="item in data.list" ng-click="event.click(item.id)")
+                            td(style="cursor: pointer;")= ng('item.title')
+                            td(style="cursor: pointer; width: 260px;")= ng('item.id')
+                            
+    script(src='/resources/view/js/index.js')
+    
+include component/layout
++layout

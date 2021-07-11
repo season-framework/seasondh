@@ -1,3 +1,6 @@
+import string
+import random
+
 class stdClass(dict):
     def __init__(self, *args, **kwargs):
         super(stdClass, self).__init__(*args, **kwargs)
@@ -62,3 +65,10 @@ class Configuration(dict):
 
     def __setstate__(self, d): 
         self.__dict__.update(d)
+
+def randomstring(length=12):
+    string_pool = string.ascii_letters + string.digits
+    result = ""
+    for i in range(length):
+        result += random.choice(string_pool)
+    return result

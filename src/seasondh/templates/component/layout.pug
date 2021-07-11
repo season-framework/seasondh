@@ -1,0 +1,18 @@
+include component/header
+
+mixin layout()
+    doctype 5
+
+    html(ng-app="app")
+        head
+            title SEASON DATAHUB
+            +header
+
+        body.antialiased(ng-controller="content")
+            script(src='/resources/libs/tabler/dist/libs/bootstrap/dist/js/bootstrap.bundle.min.js')
+            script(src='/resources/libs/tabler/dist/libs/peity/jquery.peity.min.js')
+            script(src='/resources/libs/tabler/dist/js/tabler.min.js')
+
+            +content
+
+            script(src='/resources/core/js/build.js')

@@ -80,8 +80,8 @@ class dataset:
         self.DATAPATH = os.path.join(self.BASEPATH, 'data')
         self.CACHEPATH = os.path.join(self.BASEPATH, 'cache')
 
-        basefs = FileSystem(basepath=self.BASEPATH)
-        self.package = json.loads(basefs.read(filepath=__PACKAGEFILENAME__, pkl=False, default=stdClass()))
+        basefs = FileSystem(self.BASEPATH)
+        self.package = json.loads(basefs.read(__PACKAGEFILENAME__))
         
         if 'dataloader' not in self.package: raise Exception('Data Loader must be defined')
         if 'apps' not in self.package: self.package['apps'] = []
@@ -119,10 +119,10 @@ class dataset:
 
     def get_storage(self, app_id="dataloader"):
         if app_id == 'dataloader':
-            return FileSystem(basepath=os.path.join(self.INPUTPATH, 'dataloader'))
+            return FileSystem(os.path.join(self.INPUTPATH, 'dataloader'))
         if app_id in self.__appsmap__:
             app = self.__appsmap__[app_id]
-            return FileSystem(basepath=os.path.join(self.INPUTPATH, app['id']))
+            return FileSystem(os.path.join(self.INPUTPATH, app['id']))
         return None
 
     # data loader api
@@ -159,10 +159,15 @@ class dataset:
         if app_index < 0:
             if cache:
                 CACHEPATH = os.path.join(self.CACHEPATH, 'dataloader')
-                batchfs = FileSystem(basepath=CACHEPATH)
-                batch = batchfs.read(filepath=f'batch_{batch_index}.pkl')
+                batchfs = FileSystem(CACHEPATH)
+                try:
+                    batch = batchfs.read_pickle(f'batch_{batch_index}.pkl')
+                except:
+                    batch = None
+
                 if batch is not None:
                     return batch
+
             return dataloader[batch_index]
         else:
             app_id = self.package['apps'][app_index]['id']
@@ -185,8 +190,11 @@ class dataset:
         if APP_COUNT == 0:
             if cache:
                 CACHEPATH = os.path.join(self.CACHEPATH, 'dataloader')
-                batchfs = FileSystem(basepath=CACHEPATH)
-                batch = batchfs.read(filepath=f'batch_{batch_index}.pkl')
+                batchfs = FileSystem(CACHEPATH)
+                try:
+                    batch = batchfs.read_pickle(f'batch_{batch_index}.pkl')
+                except:
+                    batch = None
                 if batch is not None:
                     return batch
             return dataloader[batch_index]
@@ -213,8 +221,11 @@ class dataset:
 
         # return cache data, if use cache
         if cache:
-            cachefs = FileSystem(basepath=CACHEPATH)
-            batch = cachefs.read(filepath=f'batch_{batch_index}.pkl')
+            cachefs = FileSystem(CACHEPATH)
+            try:
+                batch = cachefs.read_pickle(f'batch_{batch_index}.pkl')
+            except:
+                batch = None
             if batch is not None:
                 return batch
         
@@ -231,8 +242,11 @@ class dataset:
         # load previous batch, if use cache
         if cache:
             previousbatchpath = os.path.join(self.CACHEPATH, prevapp_id)
-            previousbatchfs = FileSystem(basepath=previousbatchpath)
-            batch = previousbatchfs.read(filepath=f'batch_{batch_index}.pkl')
+            previousbatchfs = FileSystem(previousbatchpath)
+            try:
+                batch = previousbatchfs.read_pickle(f'batch_{batch_index}.pkl')
+            except:
+                batch = None
 
         # load batch, if batch is none
         if batch is None:
@@ -257,8 +271,8 @@ class dataset:
 
         # if cache save mode
         if cache and batch is not None:
-            cachefs = FileSystem(basepath=CACHEPATH)
-            cachefs.write(filepath=f'batch_{batch_index}.pkl', data=batch)
+            cachefs = FileSystem(CACHEPATH)
+            cachefs.write_pickle(f'batch_{batch_index}.pkl', batch)
 
         return batch
 
