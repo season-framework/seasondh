@@ -69,6 +69,9 @@ def resources(path):
 # views
 @app.route('/')
 def index():
+    if 'password' not in config:
+        return flask.render_template("index.pug", ng=ng)
+            
     if 'active' not in flask.session or flask.session['active'] != True:
         return flask.render_template("login.pug", ng=ng)
 
@@ -115,7 +118,7 @@ def api_delete(dataset_id):
     acl()
     if dataset_id is None or len(dataset_id) == 0:
         return flask.redirect('/')
-            
+
     fs_workspace.delete(dataset_id)
     return flask.redirect('/')
 
@@ -133,6 +136,25 @@ def api_iframe(dataset_id, app_id):
                 app = _app
 
     return flask.render_template("iframe.pug", ng=ng, dataset_id=dataset_id, app_id=app_id, info=app)
+
+
+@app.route('/api/export/<dataset_id>/<app_id>')
+def api_export(dataset_id, app_id):
+    acl()
+    info = fs_workspace.read_json(f"{dataset_id}/seasondh.json")
+    app = None
+    if 'dataloader' in info:
+        if info['dataloader']['id'] == app_id:
+            app = info['dataloader']
+    if app is None and 'apps' in info:
+        for _app in info['apps']:
+            if _app['id'] == app_id:
+                app = _app
+
+    app_mode = app['mode']
+    return flask.Response(json.dumps(app), 
+            mimetype='application/json',
+            headers={'Content-Disposition': f'attachment;filename={app_mode}.{app_id}.json'})
 
 
 @app.route('/api/update/<dataset_id>', methods = ['POST'])

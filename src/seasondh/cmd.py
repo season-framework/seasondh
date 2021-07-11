@@ -23,8 +23,6 @@ from argh import arg, expects_obj
 @arg('--password', default=None, help='password')
 @expects_obj
 def web(args):
-    from .web import app
-
     print('')
     print(f"run web server via http://{args.host}:{args.port}")
     if args.password is not None:
@@ -33,6 +31,7 @@ def web(args):
         fs_workspace.write_json('seasondh.config.json', conf)
     print('')
 
+    from .web import app
     app.run(host=args.host, port=args.port)
 
 def main():

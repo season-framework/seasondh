@@ -129,7 +129,14 @@ mixin content()
                     
                 .hr.bg-white
 
-                button.btn.btn-white.btn-block(ng-click="event.save()") Save
+                button.btn.btn-white.btn-block.mb-3(ng-click="event.save()") Save
+
+                button.btn.btn-white.btn-block.mb-3(ng-click="event.select_file()") Import App
+
+                a.btn.btn-white.btn-block.mb-3(href="/api/export/{{dataset_id}}/{{app_id}}" target="_blank") Export App
+
+                .display-none(style="display: none;")
+                    input#import-file(type="file")
                 
 
         .panel-context

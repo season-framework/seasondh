@@ -15,9 +15,10 @@ mixin content()
                     li.nav-item.mr-2
                         a.nav-link.btn.btn-sm.text-white.btn-dark.btn-pill(href='/api/create')
                             span.nav-link-title.bold Create Dataset
-                    li.nav-item
-                        a.nav-link.btn.btn-sm.text-white.btn-dark.btn-pill(href='/api/auth/logout')
-                            span.nav-link-title.bold LOGOUT
+                    - if session['active']
+                        li.nav-item
+                            a.nav-link.btn.btn-sm.text-white.btn-dark.btn-pill(href='/api/auth/logout')
+                                span.nav-link-title.bold LOGOUT
 
     .container.pt-4(style="max-width: 860px;")
         .card 

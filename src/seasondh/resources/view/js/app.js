@@ -2,6 +2,17 @@ var content_controller = function ($scope, $timeout, $sce) {
     _builder($scope, $timeout);
     $scope.trustAsHtml = $sce.trustAsHtml;
 
+    function makeid(length) {
+        var result = '';
+        var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var charactersLength = characters.length;
+        for (var i = 0; i < length; i++) {
+            result += characters.charAt(Math.floor(Math.random() *
+                charactersLength));
+        }
+        return result;
+    }
+
     var option_builder = function () {
         $scope.options = {};
         $scope.options.layout = 2;
@@ -75,6 +86,24 @@ var content_controller = function ($scope, $timeout, $sce) {
             toastr.error('오류가 발생하였습니다.');
         });
     }
+
+    $scope.event.select_file = function () {
+        $('#import-file').click();
+    }
+
+    var fileinput = document.getElementById('import-file');
+    fileinput.addEventListener("change", async event => {
+        const json = JSON.parse(await fileinput.files[0].text());
+        if (json.mode != $scope.info.mode) return;
+
+        $scope.info.title = json.title;
+        $scope.info.about = json.about;
+        $scope.info.tags = json.tags;
+        $scope.info.view = json.view;
+        $scope.info.code = json.code;
+
+        $scope.event.save();
+    });
 
     // init page
     $scope.event.iframe();

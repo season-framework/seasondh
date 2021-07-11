@@ -35,9 +35,17 @@ setup(
     },
     zip_safe=False,
     entry_points={'console_scripts': [
-        'sdh = seasondh.cmd:main [seasondh]',
+        'seasondh = seasondh.cmd:main [seasondh]',
     ]},
-    install_requires=[],
+    install_requires=[
+        'flask',
+        'argh',
+        'psutil',
+        'pypugjs',
+        'lesscpy',
+        'pymysql',
+        'pandas'
+    ],
     python_requires='>=3.6',
     classifiers=[
         'License :: OSI Approved :: MIT License'
