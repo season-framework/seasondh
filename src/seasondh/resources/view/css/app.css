@@ -32,12 +32,46 @@
     }
 
     .panel-layout .panel-context {
-        /* padding-top: 64px; */
         padding-left: 360px;
+        height: 100%;
     }
 
     .fixed-top#top-nav .container-xl {
         max-width: none;
+    }
+
+    /* side menu off */
+    .sidemenu-off .panel-menu {
+        width: 76px;
+    }
+
+    .sidemenu-off .panel-menu .menu-layout {
+        padding: 0 !important;
+    }
+
+    .sidemenu-off .panel-menu h3 {
+        text-align: center;
+    }
+
+    .sidemenu-off .panel-menu h3 i {
+        padding: 16px !important;
+    }
+
+    .sidemenu-off .panel-menu .minify {
+        display: none;
+    }
+
+    .sidemenu-off .panel-menu .layout-selector {
+        padding: 4px !important;
+    }
+
+    .sidemenu-off .button-container {
+        padding: 0 8px;
+    }
+
+    .sidemenu-off .panel-context {
+        padding-left: 76px;
+        height: 100%;
     }
 }
 
@@ -139,38 +173,63 @@
 }
 
 .code-table td {
-    border-right: 1px solid rgba(110, 117, 130, .2);
+    /* border-right: 1px solid rgba(110, 117, 130, .2); */
+}
+
+.code-table td.gutter {
+    width: 1px;
+    background: rgba(110, 117, 130, .2);
+    cursor: col-resize;
+}
+
+.code-table tr.gutter {
+    width: 1px;
+    background: rgba(110, 117, 130, .2);
+    cursor: row-resize;
 }
 
 .code-table .code-tr td {
-    height: calc(50vh - 104px + 54px);
+    height: calc(50vh - 104px + 54px - 15px);
     overflow: hidden;
     vertical-align: top;
 }
 
 .code-table .code-tr td .code-input {
-    height: calc(50vh - 104px + 54px);
+    height: calc(50vh - 104px + 54px - 16px);
     overflow: hidden;
 }
 
 .code-table .code-tr td .code-input .CodeMirror {
-    height: calc(50vh - 104px + 54px);
+    height: calc(50vh - 104px + 54px - 16px);
     display: block;
 }
 
-
 .h-full .code-table .code-tr td {
-    height: calc(100vh - 183px + 84px);
+    height: calc(100vh - 183px + 84px) !important;
 }
 
 .h-full .code-table .code-tr td .code-input {
-    max-height: calc(100vh - 183px + 84px);
+    max-height: calc(100vh - 183px + 84px) !important;
 }
 
 .h-full .code-table .code-tr td .code-input .CodeMirror {
-    height: calc(100vh - 183px + 84px);
+    height: calc(100vh - 183px + 84px) !important;
 }
 
 .panel-context {
-    overflow: hidden!important;
+    overflow: hidden !important;
+}
+
+.unselectable * {
+    -moz-user-select: -moz-none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.code-tabs td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

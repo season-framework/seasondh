@@ -19,7 +19,9 @@ var content_controller = function ($scope, $timeout, $sce) {
         $scope.options.tab = {};
         $scope.options.tab['tab1_val'] = 'html';
         $scope.options.tab['tab2_val'] = 'preview';
+        $scope.options.tab['tab5_val'] = 'debug';
         $scope.options.infotab = 1;
+        $scope.options.sidemenu = true;
         $timeout()
     }
 
@@ -30,7 +32,117 @@ var content_controller = function ($scope, $timeout, $sce) {
         _cache.update($scope.options);
     }, true);
 
+    if ($scope.options.sidemenu === null) $scope.options.sidemenu = true;
+
+    $scope.status_drag = '';
+
     $scope.event = {};
+
+    var dragbasewidth = 0;
+    var dragbaseheight = 0;
+    var vh50 = window.innerHeight / 2;
+
+    $scope.event.drag = {
+        onstart: function (self) {
+            $scope.status_drag = 'unselectable';
+            $timeout();
+
+            vh50 = window.innerHeight / 2;
+
+            var target = $(self.element).attr('target');
+            dragbasewidth = $('.' + target).width();
+
+            var tds = $('.code-top td.bg-white');
+            for (var i = 0; i < tds.length; i++) {
+                var w = $(tds[i]).width();
+                if (i == tds.length - 1) {
+                    $(tds[i]).width('auto');
+                } else {
+                    $(tds[i]).width(w);
+                }
+            }
+
+            var tds = $('.code-tabs-top td');
+            for (var i = 0; i < tds.length; i++) {
+                var w = $(tds[i]).width();
+                if (i == tds.length - 1) {
+                    $(tds[i]).width('auto');
+                } else {
+                    $(tds[i]).width(w);
+                }
+            }
+
+            if ($scope.options.layout < 5) return;
+            dragbaseheight = $('.tab-5').height();
+        },
+        onmove: function (self, pos) {
+            var target = $(self.element).attr('target');
+
+            if (target == 'tab-5') {
+                var move_y = pos.y;
+                var resize_h = dragbaseheight - move_y - 1;
+                var base_h = vh50 - 65;
+                var diff = base_h - resize_h;
+                var hstr = 'calc(100vh - 130px - ' + resize_h + 'px)';
+                $('.code-top td').height(hstr);
+                hstr = 'calc(100vh - 132px - ' + resize_h + 'px)';
+                $('.code-top td .code-input').height(hstr);
+                $('.code-top td .code-input .CodeMirror').height(hstr);
+
+                $('.code-bottom td').height(resize_h);
+                $('.code-bottom td .code-input').height(resize_h);
+                $('.code-bottom td .code-input .CodeMirror').height(resize_h);
+
+                return;
+            }
+
+            var move_x = pos.x;
+
+            if (dragbasewidth + move_x - 1 < 400) return;
+            if (move_x > 0 && $('.code-top td.bg-white:last-child').width() < 400) {
+                return;
+            }
+
+            $('.' + target).width(dragbasewidth + move_x - 1);
+        },
+        onend: function (self) {
+            $scope.status_drag = '';
+            $timeout();
+        }
+    };
+
+    $timeout(function() {
+        if ($scope.options.layout > 4) {
+            var resize_h = 300;
+            var hstr = 'calc(100vh - 130px - ' + resize_h + 'px)';
+            $('.code-top td').height(hstr);
+            hstr = 'calc(100vh - 132px - ' + resize_h + 'px)';
+            $('.code-top td .code-input').height(hstr);
+            $('.code-top td .code-input .CodeMirror').height(hstr);
+    
+            $('.code-bottom td').height(resize_h);
+            $('.code-bottom td .code-input').height(resize_h);
+            $('.code-bottom td .code-input .CodeMirror').height(resize_h);
+        }
+    })
+
+    $scope.$watch('options.tab', function () {
+        try {
+            var hstr = $('.code-top td')[0].style.height;
+            $timeout(function () {
+                $('.h-half .code-top td .code-input').height(hstr);
+                $('.h-half .code-top td .code-input .CodeMirror').height(hstr);
+            });
+        } catch (e) {
+        }
+    }, true);
+
+    $scope.event.toggle = {};
+    $scope.event.toggle.sidemenu = function () {
+        $scope.options.sidemenu = !$scope.options.sidemenu;
+        $timeout();
+    }
+
     $scope.event.info = function () {
         $.post('/api/dataset/info/' + dataset_id, function (res) {
             $scope.dataset_info = res.data;
@@ -54,6 +166,22 @@ var content_controller = function ($scope, $timeout, $sce) {
         });
     }
 
+    $scope.serverlogs = [];
+
+    $scope.event.clear_log = function() {
+        $scope.serverlogs = [];
+        $timeout();
+    }
+
+    var logger = function (code, msg) {
+        $scope.serverlogs.push(msg);
+        $timeout(function () {
+            setTimeout(function() {
+                $('#serverlog-debug').scrollTop(10000000);
+            }, 100);
+        });
+    }
+
     $scope.event.iframe = function (findurl) {
         var url = "/api/iframe/" + dataset_id + "/" + app_id + '?' + new Date().getTime();
         if (findurl) {
@@ -61,6 +189,12 @@ var content_controller = function ($scope, $timeout, $sce) {
         }
         $timeout(function () {
             $('iframe').attr('src', url);
+            var iframes = $('iframe');
+            for (var i = 0; i < iframes.length; i++) {
+                $(iframes[i]).one('load', function () {
+                    this.contentWindow.API.logger = logger;
+                });
+            }
         });
     };
 

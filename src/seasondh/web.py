@@ -6,6 +6,7 @@ import inspect
 import json
 import flask
 import logging
+import traceback
 
 from .base import randomstring
 from .dataset import dataset as seasondh_dataset
@@ -35,8 +36,8 @@ if 'session_secret' in config:
 else:
     app.secret_key = 'seasondh'
 
-def message_builder(code, data):
-    return { 'code': code, 'data': data }
+def message_builder(code, data, log=None):
+    return { 'code': code, 'data': data, 'log': log }
 
 def build_dataset_args(app_id):
     kwargs = dict()
@@ -88,7 +89,6 @@ def dataset_(dataset_id):
 def app_(dataset_id, app_id):
     acl()
     return flask.render_template("app.pug", ng=ng, dataset_id=dataset_id, app_id=app_id)
-
 
 # api
 @app.route('/api/auth/login', methods=['POST'])
@@ -199,6 +199,8 @@ def api_dataset_list():
 @app.route('/api/view/function/<dataset_id>/<app_id>/<fnname>', methods=['GET', 'POST'])
 def api_dataset_functions(dataset_id, app_id, fnname):
     acl()
+
+    logs = []
     try:
         info = fs_workspace.read_json(f"{dataset_id}/seasondh.json")
         app = None
@@ -217,7 +219,7 @@ def api_dataset_functions(dataset_id, app_id, fnname):
         view_api = view['api']
         fn = {}
         exec(view_api, fn)
-        if fnname not in fn: return message_builder(404, 'Not Found')
+        if fnname not in fn: return message_builder(404, 'Not Found', f'Function {fnname} Not Exists')
 
         dataset = seasondh_dataset(os.path.join(WORKSPACE_PATH, dataset_id))
         kwargs = {}
@@ -233,7 +235,17 @@ def api_dataset_functions(dataset_id, app_id, fnname):
         kwargs['query'] = dict(flask.request.values)
         kwargs['files'] = flask.request.files.getlist('file[]')
 
+        def _print(*args):
+            data = []
+            for arg in args:
+                data.append(str(arg))
+            data = " ".join(data)
+            logs.append(data)
+
+        fn['print'] = _print
+
         result = fn[fnname](**kwargs)
-        return result
+        return message_builder(200, result, "\n".join(logs))
     except Exception as e:
-        return message_builder(500, str(e))
+        logs.append(traceback.format_exc())
+        return message_builder(500, None, "\n".join(logs))

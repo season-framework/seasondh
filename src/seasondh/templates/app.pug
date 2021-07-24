@@ -5,15 +5,27 @@ mixin codearea(tab)
     textarea.form-control(ng-if="options.tab.{{tab}}_val == 'api'" ng-model="info.view.api" ui-codemirror-opts="codemirror('python')" ui-codemirror)
     textarea.form-control(ng-if="options.tab.{{tab}}_val == 'code'" ng-model="info.code" ui-codemirror-opts="codemirror('python')" ui-codemirror)
     .code-preview(ng-if="options.tab.{{tab}}_val == 'preview'" style="max-width: none; width: 100%; height: 100%;")
-        iframe(style="height: 100%;")
+        iframe(style="height: 100%;" ng-hide="status_drag == 'unselectable'")
+        table(ng-if="status_drag == 'unselectable'" style="width: 100%; height: 100%;")
+            tr 
+                td(style="text-align: center; vertical-align: middle;")
+                    .spinner-grow.text-blue(style="width: 120px; height: 120px;")
+    .code-preview#serverlog-debug(ng-if="options.tab.{{tab}}_val == 'debug'" style="position: relative; max-width: none; width: 100%; height: 100%; background: black; color: white; overflow: auto;")
+        .debug-area
+            pre(style="margin: 0 !important; padding: 0 !important; display: block;" ng-repeat="log in serverlogs track by $index")= ng('log')
 
 mixin codeselect(tab)
-    button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'html'" ng-class="options.tab.{{tab}}_val == 'html' ? 'btn-white' : 'btn-dark'") HTML
-    button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'js'" ng-class="options.tab.{{tab}}_val == 'js' ? 'btn-white' : 'btn-dark'") JS
-    button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'css'" ng-class="options.tab.{{tab}}_val == 'css' ? 'btn-white' : 'btn-dark'") CSS
-    button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'api'" ng-class="options.tab.{{tab}}_val == 'api' ? 'btn-white' : 'btn-dark'") View API
-    button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'code'" ng-class="options.tab.{{tab}}_val == 'code' ? 'btn-white' : 'btn-dark'") Dataset
-    button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'preview'; event.iframe();" ng-class="options.tab.{{tab}}_val == 'preview' ? 'btn-white' : 'btn-dark'") Preview
+    - if tab != 'tab5'
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'html'" ng-class="options.tab.{{tab}}_val == 'html' ? 'btn-white' : 'btn-dark'") HTML
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'js'" ng-class="options.tab.{{tab}}_val == 'js' ? 'btn-white' : 'btn-dark'") JS
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'css'" ng-class="options.tab.{{tab}}_val == 'css' ? 'btn-white' : 'btn-dark'") CSS
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'api'" ng-class="options.tab.{{tab}}_val == 'api' ? 'btn-white' : 'btn-dark'") View API
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'code'" ng-class="options.tab.{{tab}}_val == 'code' ? 'btn-white' : 'btn-dark'") Dataset
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'preview'; event.iframe();" ng-class="options.tab.{{tab}}_val == 'preview' ? 'btn-white' : 'btn-dark'") Preview
+    - else
+        button.btn.btn-square.btn-sm.btn-dark.mr-1(ng-click="event.clear_log()") Log Clear
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'debug'" ng-class="options.tab.{{tab}}_val == 'debug' ? 'btn-white' : 'btn-dark'") Debug
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'preview'; event.iframe();" ng-class="options.tab.{{tab}}_val == 'preview' ? 'btn-white' : 'btn-dark'") Preview
 
 mixin content()
     script.
@@ -38,22 +50,24 @@ mixin content()
                             a.nav-link.btn.btn-sm.text-white.btn-dark.btn-pill(href='/dataset/{{dataset_id}}')
                                 span.nav-link-title.bold X
 
-    .panel-layout
+    .panel-layout(class="{{ng('options.sidemenu ? \'sidemenu-on\' : \'sidemenu-off\'')}}" ng-class="status_drag")
         .panel-menu.bg-dark
             .menu-layout.p-3
-                h3.text-white.mb-3 App Info.
+                h3.text-white.mb-3 
+                    i.fas.fa-bars.mr-2(ng-click="event.toggle.sidemenu()")
+                    span.minify App Info.
 
-                .card.card-sm.mb-3
+                .card.card-sm.mb-3.minify
                     .card-body
                         label.form-label App Title
                         input.form-control(type='text' placeholder='App 제목' ng-model="info.title")
 
-                .card.card-sm.mb-3
+                .card.card-sm.mb-3.minify
                     .card-body
                         label.form-label App Description
                         textarea.form-control(ng-model="info.about" rows=4)
 
-                .card.card-sm.mb-4
+                .card.card-sm.mb-4.minify
                     .card-body
                         label.form-label Tags
                         input.form-control(type='text' placeholder='tag & enter' ng-model="tag_input" ng-enter="event.create_tag(tag_input)")
@@ -62,9 +76,9 @@ mixin content()
                                 | {{ng('tag')}}
                                 i.fas.fa-minus-square.ml-2
 
-                .hr.bg-white
+                .hr.bg-white.minify
                 
-                h3.text-white Layout
+                h3.text-white.minify Layout
 
                 .text-center.mb-4
                     .layout-selector.p-2(ng-class="options.layout == 1 ? 'active' : ''" ng-click="options.layout = 1")
@@ -127,52 +141,73 @@ mixin content()
                             .layout-row
                                 .layout-column
                     
-                .hr.bg-white
+                .hr.bg-white.minify
 
-                button.btn.btn-white.btn-block.mb-3(ng-click="event.save()") Save
+                .button-container
+                    button.btn.btn-white.btn-block.mb-3(ng-click="event.save()") 
+                        i.fas.fa-save
+                        span.minify.ml-2 Save
 
-                button.btn.btn-white.btn-block.mb-3(ng-click="event.select_file()") Import App
+                    button.btn.btn-white.btn-block.mb-3(ng-click="event.select_file()") 
+                        i.fas.fa-upload
+                        span.minify.ml-2 Import App
 
-                a.btn.btn-white.btn-block.mb-3(href="/api/export/{{dataset_id}}/{{app_id}}" target="_blank") Export App
+                    a.btn.btn-white.btn-block.mb-3(href="/api/export/{{dataset_id}}/{{app_id}}" target="_blank") 
+                        i.fas.fa-download
+                        span.minify.ml-2 Export App
 
                 .display-none(style="display: none;")
                     input#import-file(type="file")
                 
-
         .panel-context
             .p-0.pt-2.bg-dark
-                table.w-100.code-tabs
+                table.w-100.code-tabs.code-tabs-top
                     tr
-                        td.text-center(ng-if="[1,2,3,4,5,6,7,8].includes(options.layout)")
+                        td.tab-1.text-center(ng-if="[1,2,3,4,5,6,7,8].includes(options.layout)")
                             +codeselect('tab1')
-                        td.text-center(ng-if="[2,3,4,6,7,8].includes(options.layout)")
+                        td.tab-2.text-center(ng-if="[2,3,4,6,7,8].includes(options.layout)")
                             +codeselect('tab2')
-                        td.text-center(ng-if="[3,4,7,8].includes(options.layout)")
+                        td.tab-3.text-center(ng-if="[3,4,7,8].includes(options.layout)")
                             +codeselect('tab3')
-                        td.text-center(ng-if="[4,8].includes(options.layout)")
+                        td.tab-4.text-center(ng-if="[4,8].includes(options.layout)")
                             +codeselect('tab4')
 
             .code-container(ng-class="[5,6,7,8].includes(options.layout) ? 'h-half' : 'h-full'")
                 table.w-100.code-table
-                    tr.code-tr                                
-                        td.bg-white(ng-if="[1,2,3,4,5,6,7,8].includes(options.layout)")
+                    tr.code-tr.code-top
+                        td.tab-1.bg-white(ng-if="[1,2,3,4,5,6,7,8].includes(options.layout)")
                             .code-input(style='height: 100%;')
                                 +codearea('tab1')
-                        td.bg-white(ng-if="[2,3,4,6,7,8].includes(options.layout)")
+
+                        td.gutter.g-1(ng-if="[2,3,4,6,7,8].includes(options.layout)" target="tab-1" ng-drag="event.drag")
+                        td.tab-2.bg-white(ng-if="[2,3,4,6,7,8].includes(options.layout)")
                             .code-input(style='height: 100%;')
                                 +codearea('tab2')
-                        td.bg-white(ng-if="[3,4,7,8].includes(options.layout)")
+
+                        td.gutter.g-2(ng-if="[3,4,7,8].includes(options.layout)" target="tab-2" ng-drag="event.drag")
+                        td.tab-3.bg-white(ng-if="[3,4,7,8].includes(options.layout)")
                             .code-input(style='height: 100%;')
                                 +codearea('tab3')
-                        td.bg-white(ng-if="[4,8].includes(options.layout)")
+
+                        td.gutter.g-3(ng-if="[4,8].includes(options.layout)" target="tab-3" ng-drag="event.drag")
+                        td.tab-4.bg-white(ng-if="[4,8].includes(options.layout)")
                             .code-input(style='height: 100%;')
                                 +codearea('tab4')
 
-                    tr.code-tr                                
-                        td(ng-if="[5,6,7,8].includes(options.layout)" colspan="{{ng('options.layout - 4')}}" style="border-top: 1px solid rgba(110, 117, 130, .2);")
+                    tr.gutter.g-t(ng-if="[5,6,7,8].includes(options.layout)" target="tab-5" ng-drag="event.drag")
+                        td(colspan="{{ng('(options.layout - 4) + (options.layout - 5)')}}")
+
+                    tr.code-tr.code-bottom(ng-if="[5,6,7,8].includes(options.layout)")
+                        td.tab-5(colspan="{{ng('(options.layout - 4) + (options.layout - 5)')}}")
                             .code-input(style='height: 100%;')
                                 +codearea('tab5')
-    
+
+            .p-0.pt-2.bg-dark
+                table.w-100.code-tabs
+                    tr
+                        td.tab-5.text-right(ng-if="[5,6,7,8].includes(options.layout)")
+                            +codeselect('tab5')
+
     link(href='/resources/view/css/app.css' rel='stylesheet')
     script(src='/resources/view/js/app.js')
     

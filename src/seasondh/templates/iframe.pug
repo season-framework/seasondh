@@ -6,6 +6,8 @@ mixin content()
         var dataset_id = '{{dataset_id}}';
         var app_id = '{{app_id}}';
         var API = {
+            logger: function(code, msg) {
+            },
             apps: {
                 view: {
                     url: function(fnname) {
@@ -24,7 +26,15 @@ mixin content()
                                 ajax[key]= opts[key];
                             }
                         }
-                        $.ajax(ajax).always(cb);
+                        $.ajax(ajax).always(function(a, b, c) {
+                            if(a.log)
+                                API.logger(a.code, a.log);
+                            
+                            if(a.code == 200)
+                                cb(a.data, b, c);
+                            else
+                                cb(a, b, c);
+                        });
                     }
                 }
             }

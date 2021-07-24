@@ -44,7 +44,7 @@ var draggerjs = function (element, config) {
             if (self._move) self._move(self, { x: move_x, y: move_y });
         });
 
-        element.bind('mouseup', function (ev) {
+        $(window).bind('mouseup', function (ev) {
             if (self.mode == 'stop') return;
             self.mode = 'stop';
             start_ev = self.start_event;
