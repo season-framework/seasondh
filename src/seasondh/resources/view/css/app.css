@@ -16,7 +16,7 @@
         top: 0;
         left: 0;
         padding-top: 64px;
-        overflow: scroll;
+        overflow: auto;
         z-index: 1001;
     }
 
@@ -27,7 +27,7 @@
         top: 0;
         left: 360px;
         padding-top: 64px;
-        overflow: scroll;
+        overflow: auto;
         z-index: 1001;
     }
 
