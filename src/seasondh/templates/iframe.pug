@@ -32,7 +32,17 @@ mixin content()
                             if(a.log)
                                 API.logger(a.code, a.log);
                             delete a.log;
-                            cb(a, b, c);
+
+                            try {
+                                if (a.code == 200) {
+                                    cb(a.data, b, c);
+                                } else {
+                                    cb({code: a.code}, b, c);
+                                }
+                            } catch(e) {
+                                cb({code: 500}, b, c);
+                            }
+                            
                         });
                     }
                 }
