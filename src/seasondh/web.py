@@ -241,9 +241,16 @@ def api_dataset_functions(dataset_id, app_id, fnname):
             logs.append(data)
 
         fn['print'] = _print
+        dataset.set_print(_print)
 
-        result = fn[fnname](**kwargs)
+        result = None
+        try:
+            result = fn[fnname](**kwargs)
+        except Exception as e:
+            logs.append("<pre style='color: red; margin: 0 !important; padding: 0 !important; display: block;'>" + traceback.format_exc() + "</pre>")
+            return message_builder(500, None, "\n".join(logs))
+
         return message_builder(200, result, "\n".join(logs))
     except Exception as e:
-        logs.append(traceback.format_exc())
+        logs.append("<pre style='color: red; margin: 0 !important; padding: 0 !important; display: block;'>" + traceback.format_exc() + "</pre>")
         return message_builder(500, None, "\n".join(logs))

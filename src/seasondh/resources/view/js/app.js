@@ -111,7 +111,7 @@ var content_controller = function ($scope, $timeout, $sce) {
         }
     };
 
-    $timeout(function() {
+    $timeout(function () {
         if ($scope.options.layout > 4) {
             var resize_h = 300;
             var hstr = 'calc(100vh - 130px - ' + resize_h + 'px)';
@@ -119,7 +119,7 @@ var content_controller = function ($scope, $timeout, $sce) {
             hstr = 'calc(100vh - 132px - ' + resize_h + 'px)';
             $('.code-top td .code-input').height(hstr);
             $('.code-top td .code-input .CodeMirror').height(hstr);
-    
+
             $('.code-bottom td').height(resize_h);
             $('.code-bottom td .code-input').height(resize_h);
             $('.code-bottom td .code-input .CodeMirror').height(resize_h);
@@ -168,7 +168,7 @@ var content_controller = function ($scope, $timeout, $sce) {
 
     $scope.serverlogs = [];
 
-    $scope.event.clear_log = function() {
+    $scope.event.clear_log = function () {
         $scope.serverlogs = [];
         $timeout();
     }
@@ -176,7 +176,7 @@ var content_controller = function ($scope, $timeout, $sce) {
     var logger = function (code, msg) {
         $scope.serverlogs.push(msg);
         $timeout(function () {
-            setTimeout(function() {
+            setTimeout(function () {
                 $('#serverlog-debug').scrollTop(10000000);
             }, 100);
         });
@@ -193,6 +193,10 @@ var content_controller = function ($scope, $timeout, $sce) {
             for (var i = 0; i < iframes.length; i++) {
                 $(iframes[i]).one('load', function () {
                     this.contentWindow.API.logger = logger;
+                    for (var j = 0; j < this.contentWindow.API.logger_cache.length; j++) {
+                        logger(this.contentWindow.API.logger_cache[j][0], this.contentWindow.API.logger_cache[j][1]);
+                    }
+                    this.contentWindow.API.logger_cache = [];
                 });
             }
         });

@@ -11,8 +11,8 @@ mixin codearea(tab)
                 td(style="text-align: center; vertical-align: middle;")
                     .spinner-grow.text-blue(style="width: 120px; height: 120px;")
     .code-preview#serverlog-debug(ng-if="options.tab.{{tab}}_val == 'debug'" style="position: relative; max-width: none; width: 100%; height: 100%; background: black; color: white; overflow: auto;")
-        .debug-area
-            pre(style="margin: 0 !important; padding: 0 !important; display: block;" ng-repeat="log in serverlogs track by $index")= ng('log')
+        .debug-area(style="margin: 8px;")
+            pre(style="margin: 0 !important; padding: 0 !important; display: block;" ng-repeat="log in serverlogs track by $index" ng-bind-html="trustAsHtml(log)")
 
 mixin codeselect(tab)
     - if tab != 'tab5'

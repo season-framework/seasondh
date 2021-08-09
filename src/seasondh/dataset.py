@@ -16,6 +16,9 @@ version = VERSION_STRING
 # utils
 class __util__:
 
+    def print(*args):
+        print(*args)
+
     def parse_json(self, jsonstr, default=None):
         try:
             return json.loads(jsonstr)
@@ -41,6 +44,8 @@ class __util__:
     def build_function(self, function_str, loadclass=None):
         fn = {}
         exec(function_str, fn)
+
+        fn['print'] = self.print
         if loadclass is not None: 
             if loadclass not in fn: return None
             return fn[loadclass]
@@ -54,6 +59,12 @@ class dataset:
     __defaultoptions__ = {
         "cache": True
     }
+
+    def setPrint(self, printfn):
+        self.set_print(printfn)
+
+    def set_print(self, printfn):
+        __util__.print = printfn
 
     def option(self, key):
         if key in self.__kwargs__:

@@ -6,7 +6,9 @@ mixin content()
         var dataset_id = '{{dataset_id}}';
         var app_id = '{{app_id}}';
         var API = {
+            logger_cache: [],
             logger: function(code, msg) {
+                API.logger_cache.push([code, msg]);
             },
             apps: {
                 view: {
@@ -29,11 +31,8 @@ mixin content()
                         $.ajax(ajax).always(function(a, b, c) {
                             if(a.log)
                                 API.logger(a.code, a.log);
-                            
-                            if(a.code == 200)
-                                cb(a.data, b, c);
-                            else
-                                cb(a, b, c);
+                            delete a.log;
+                            cb(a, b, c);
                         });
                     }
                 }
