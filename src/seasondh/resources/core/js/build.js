@@ -25,15 +25,21 @@ var _builder = function ($scope, $timeout) {
     }
 
     $scope.codemirror = function (language) {
-        return {
+        var opt = {
             lineNumbers: true,
             mode: language,
+            lineWrapping: true,
             autoRefresh: true,
             indentWithTabs: false,
-            tabSize: 4,
+            indentUnit: 2,
+            foldGutter: true,
+            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+            tabSize: 2,
+            insertSoftTab: true,
             viewportMargin: Infinity,
             keyMap: 'sublime'
         };
+        return opt;
     }
 }
 

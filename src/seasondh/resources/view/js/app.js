@@ -215,8 +215,9 @@ var content_controller = function ($scope, $timeout, $sce) {
 
     $scope.event.save = function (cb) {
         var data = angular.copy($scope.dataset_info);
-
-        $.post('/api/update/' + dataset_id, { data: JSON.stringify(data) }, function (res) {
+        data = JSON.stringify(data);
+        data = data.replace(/\\t/gim, '  ');
+        $.post('/api/update/' + dataset_id, { data: data }, function (res) {
             $scope.event.iframe();
             if (cb) return cb(res);
             if (res.code == 200) {
