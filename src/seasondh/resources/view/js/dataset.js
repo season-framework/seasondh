@@ -120,8 +120,8 @@ var content_controller = function ($scope, $timeout) {
         if (!app || !app.id) return;
         $timeout(function () {
             var url = "/api/iframe/" + $scope.info.id + "/" + app.id;
-            $('#iframe-' + app.id).attr('src', url);
-            $('#iframe-' + app.id).one('load', function () {
+            $('#iframe-' + app.id).unbind();
+            $('#iframe-' + app.id).on('load', function () {
                 iframeheight = this.contentWindow.document.body.offsetHeight;
                 $(this).parent().height(iframeheight + 'px');
 
@@ -141,6 +141,7 @@ var content_controller = function ($scope, $timeout) {
                 _height_changed_detect();
                 if (cb) cb();
             });
+            $('#iframe-' + app.id).attr('src', url);
         });
     }
 

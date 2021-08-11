@@ -191,7 +191,8 @@ var content_controller = function ($scope, $timeout, $sce) {
             $('iframe').attr('src', url);
             var iframes = $('iframe');
             for (var i = 0; i < iframes.length; i++) {
-                $(iframes[i]).one('load', function () {
+                $(iframes[i]).unbind();
+                $(iframes[i]).on('load', function () {
                     this.contentWindow.API.logger = logger;
                     for (var j = 0; j < this.contentWindow.API.logger_cache.length; j++) {
                         logger(this.contentWindow.API.logger_cache[j][0], this.contentWindow.API.logger_cache[j][1]);
