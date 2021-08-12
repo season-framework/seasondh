@@ -134,9 +134,12 @@ def api_delete(dataset_id):
 def api_iframe(dataset_id, app_id):
     acl()
 
-    proc = Spawner()
-    proc.kill(dataset_id, app_id)
-    
+    try:
+        proc = Spawner()
+        proc.kill(dataset_id, app_id)
+    except:
+        pass
+
     info = fs_workspace.read_json(f"{dataset_id}/seasondh.json")
     app = None
     if 'dataloader' in info:
