@@ -15,7 +15,7 @@ def package_files(directory):
             paths.append(os.path.join(path, filename)[13:])
     return paths
 
-extra_files = package_files(os.path.join(SEASON_PKG_DIR, 'resources')) + package_files(os.path.join(SEASON_PKG_DIR, 'templates'))
+extra_files = package_files(os.path.join(SEASON_PKG_DIR, 'resources')) + package_files(os.path.join(SEASON_PKG_DIR, 'templates')) + package_files(os.path.join(SEASON_PKG_DIR, 'screenshots'))
 
 setup(
     name='seasondh',

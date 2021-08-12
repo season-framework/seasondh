@@ -5,6 +5,7 @@ import json
 import flask
 import logging
 import traceback
+import datetime
 
 from .base import randomstring, Spawner
 from .dataset import dataset as seasondh_dataset
@@ -34,9 +35,14 @@ if 'session_secret' in config:
 else:
     app.secret_key = 'seasondh'
 
+def json_default(value): 
+    if isinstance(value, datetime.date): 
+        return value.strftime('%Y-%m-%d %H:%M:%S') 
+    raise str(value)
+
 def message_builder(code, data, log=None):
     return flask.Response(
-        response=json.dumps({ 'code': code, 'data': data, 'log': log }),
+        response=json.dumps({ 'code': code, 'data': data, 'log': log }, default=json_default),
         status=200,
         mimetype='application/json'
     )
