@@ -87,6 +87,16 @@ mixin content()
 
                 .card.card-sm.mb-3
                     .card-header.p-2.pl-3.pr-3
+                        span Export & Import
+                    .card-body 
+                        a.btn.btn-outline-dark.btn-block(href="/api/exports/{{ng('info.id')}}") Export
+                    .card-body 
+                        button.btn.btn-outline-dark.btn-block(ng-click="event.import()") Import
+                        .display-none(style="display: none;")
+                            input#import-file(type="file")
+
+                .card.card-sm.mb-3
+                    .card-header.p-2.pl-3.pr-3
                         span Delete Dataset
                     .card-body(ng-if="allow_delete")
                         | Are you sure to delete this dataset?

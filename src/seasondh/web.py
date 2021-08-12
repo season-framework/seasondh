@@ -6,6 +6,7 @@ import flask
 import logging
 import traceback
 import datetime
+import urllib
 
 from .base import randomstring, Spawner
 from .dataset import dataset as seasondh_dataset
@@ -152,6 +153,17 @@ def api_iframe(dataset_id, app_id):
 
     return flask.render_template("iframe.pug", ng=ng, dataset_id=dataset_id, app_id=app_id, info=app)
 
+
+@app.route('/api/exports/<dataset_id>')
+def api_exports(dataset_id):
+    acl()
+    info = fs_workspace.read_json(f"{dataset_id}/seasondh.json")
+    title = info['title']
+    title = urllib.parse.quote(title)
+    
+    return flask.Response(json.dumps(info, indent=4, sort_keys=True), 
+            mimetype='application/json',
+            headers={'Content-Disposition': f'attachment;filename={title}.json'})
 
 @app.route('/api/export/<dataset_id>/<app_id>')
 def api_export(dataset_id, app_id):

@@ -166,5 +166,20 @@ var content_controller = function ($scope, $timeout) {
         $scope.iframe.load_all();
     }
 
+
+    $scope.event.import = function () {
+        $('#import-file').click();
+    }
+
+    var fileinput = document.getElementById('import-file');
+    fileinput.addEventListener("change", async event => {
+        const json = JSON.parse(await fileinput.files[0].text());
+        json.id = $scope.info.id;
+        $scope.info = json;
+        $scope.event.save(function() {
+            location.reload();
+        });
+    });
+
     $scope.event.info();
 };
