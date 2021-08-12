@@ -133,6 +133,10 @@ def api_delete(dataset_id):
 @app.route('/api/iframe/<dataset_id>/<app_id>')
 def api_iframe(dataset_id, app_id):
     acl()
+
+    proc = Spawner()
+    proc.kill(dataset_id, app_id)
+    
     info = fs_workspace.read_json(f"{dataset_id}/seasondh.json")
     app = None
     if 'dataloader' in info:
@@ -241,7 +245,7 @@ def api_dataset_functions(dataset_id, app_id, fnname):
 
         proc = Spawner()
         proc.define(view_api)
-        result, stdout, stderr = proc.run(fnname, kwargs=kwargs)
+        result, stdout, stderr = proc.run(dataset_id, app_id, fnname, kwargs=kwargs)
 
         if stdout is not None and stdout != "": 
             logs.append(stdout)

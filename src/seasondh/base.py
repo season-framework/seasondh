@@ -79,6 +79,10 @@ import traceback
 from io import StringIO 
 import sys
 
+mp.set_start_method('fork')
+
+processes = {}
+
 class Capturing(list):
 
     def __enter__(self):
@@ -117,13 +121,38 @@ class Spawner:
         q.put(stdout)
         q.put(stderr)
 
-    def run(self, fnname, kwargs=dict()):
-        # mp.set_start_method('fork')
+    def kill(self, dataset_id, app_id):
+        process_group = f"{dataset_id}:{app_id}"
+        if process_group not in processes:
+            return 
+
+        for i in range(len(processes[process_group])):
+            p = processes[process_group][i]
+            try:
+                p.kill()
+            except:
+                pass
+            if p.exitcode is not None:
+                processes[process_group].remove(p)
+                if i > 0: i = i - 1
+
+    def run(self, dataset_id, app_id, fnname, kwargs=dict()):
+        process_group = f"{dataset_id}:{app_id}"
+        if process_group not in processes:
+            processes[process_group] = []
+        
         q = mp.Queue()
         p = mp.Process(target=self.fnwrap, args=[q, fnname], kwargs=kwargs)
+        p.name = fnname
+
+        processes[process_group].append(p)
+        
         p.start()
         result = q.get()
         stdout = q.get()
         stderr = q.get()
         p.join()
+
+        processes[process_group].remove(p)
+
         return result, stdout, stderr
