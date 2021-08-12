@@ -1,6 +1,6 @@
 from .interfaces import *
 from .storage import *
-from .base import stdClass
+from .base import stdClass, Spawner
 from .version import VERSION_STRING
 from .dataset import dataset
 

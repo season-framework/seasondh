@@ -72,3 +72,58 @@ def randomstring(length=12):
     for i in range(length):
         result += random.choice(string_pool)
     return result
+
+import multiprocessing as mp
+import time
+import traceback
+from io import StringIO 
+import sys
+
+class Capturing(list):
+
+    def __enter__(self):
+        self._stdout = sys.stdout
+        sys.stdout = self._stringio = StringIO()
+        return self
+
+    def __exit__(self, *args):
+        self.extend(self._stringio.getvalue().splitlines())
+        del self._stringio
+        sys.stdout = self._stdout
+
+class Spawner:
+
+    def __init__(self, name="default spawner"):
+        self.name = name
+
+    def define(self, code):
+        self.code = code
+
+    def fnwrap(self, q, fnname, **kwargs):
+        result = None
+        stderr = ""
+        with Capturing() as stdout:
+            try:
+                code = self.code
+                fn = {'__file__': 'seasondh.Spawner', '__name__': 'seasondh.Spawner'}
+                exec(compile(code, 'seasondh.Spawner', 'exec'), fn)
+                result = fn[fnname](**kwargs)
+            except Exception as e:
+                stderr = traceback.format_exc()
+
+        stdout = list(stdout)
+        stdout = "\n".join(stdout)
+        q.put(result)
+        q.put(stdout)
+        q.put(stderr)
+
+    def run(self, fnname, kwargs=dict()):
+        # mp.set_start_method('fork')
+        q = mp.Queue()
+        p = mp.Process(target=self.fnwrap, args=[q, fnname], kwargs=kwargs)
+        p.start()
+        result = q.get()
+        stdout = q.get()
+        stderr = q.get()
+        p.join()
+        return result, stdout, stderr

@@ -6,7 +6,7 @@ import flask
 import logging
 import traceback
 
-from .base import randomstring
+from .base import randomstring, Spawner
 from .dataset import dataset as seasondh_dataset
 from .storage import FileSystem
 
@@ -215,16 +215,12 @@ def api_dataset_functions(dataset_id, app_id, fnname):
 
         view = app['view']
         view_api = view['api']
-        fn = {}
-        exec(view_api, fn)
-        if fnname not in fn: return message_builder(404, 'Not Found', f'Function {fnname} Not Exists')
-
+        
+        # define parameters
         dataset = seasondh_dataset(os.path.join(WORKSPACE_PATH, dataset_id))
         kwargs = {}
-
         if 'mode' in app and app['mode'] == 'dataloader': kwargs['storage'] = dataset.get_storage(app_id='dataloader')
         else: kwargs['storage'] = dataset.get_storage(app_id=app_id)
-
         kwargs['app_id'] = app_id
         kwargs['dataset_id'] = dataset_id
         kwargs['storage_path'] = WORKSPACE_PATH
@@ -233,22 +229,14 @@ def api_dataset_functions(dataset_id, app_id, fnname):
         kwargs['query'] = dict(flask.request.values)
         kwargs['files'] = flask.request.files.getlist('file[]')
 
-        def _print(*args):
-            data = []
-            for arg in args:
-                data.append(str(arg))
-            data = " ".join(data)
-            logs.append(data)
+        proc = Spawner()
+        proc.define(view_api)
+        result, stdout, stderr = proc.run(fnname, kwargs=kwargs)
 
-        fn['print'] = _print
-        dataset.set_print(_print)
-
-        result = None
-        try:
-            result = fn[fnname](**kwargs)
-        except Exception as e:
-            logs.append("<pre style='color: red; margin: 0 !important; padding: 0 !important; display: block;'>" + traceback.format_exc() + "</pre>")
-            return message_builder(500, None, "\n".join(logs))
+        if stdout is not None and stdout != "": 
+            logs.append(stdout)
+        if stderr is not None and stderr != "": 
+            logs.append("<pre style='color: red; margin: 0 !important; padding: 0 !important; display: block;'>" + stderr +  "</pre>")
 
         return message_builder(200, result, "\n".join(logs))
     except Exception as e:
