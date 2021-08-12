@@ -35,7 +35,11 @@ else:
     app.secret_key = 'seasondh'
 
 def message_builder(code, data, log=None):
-    return { 'code': code, 'data': data, 'log': log }
+    return flask.Response(
+        response=json.dumps({ 'code': code, 'data': data, 'log': log }),
+        status=200,
+        mimetype='application/json'
+    )
 
 def build_dataset_args(app_id):
     kwargs = dict()
