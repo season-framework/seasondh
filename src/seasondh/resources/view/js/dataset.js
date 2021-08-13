@@ -148,6 +148,21 @@ var content_controller = function ($scope, $timeout) {
     }
 
     $scope.event.click = {};
+
+    $scope.event.click.trash = function (app) {
+        $scope.selected = app;
+        $('#modal-delete').modal('show');
+        $timeout();
+    }
+
+    $scope.event.click.delete = function (app) {
+        $scope.info.apps.remove(app);
+        $scope.event.save(function () {
+            location.reload();
+        });
+        $timeout();
+    }
+
     $scope.event.click.item = function (app) {
         $scope.event.save(function () {
             location.href = '/app/' + dataset_id + '/' + app.id;
@@ -178,7 +193,7 @@ var content_controller = function ($scope, $timeout) {
         const json = JSON.parse(await fileinput.files[0].text());
         json.id = $scope.info.id;
         $scope.info = json;
-        $scope.event.save(function() {
+        $scope.event.save(function () {
             location.reload();
         });
     });

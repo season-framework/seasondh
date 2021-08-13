@@ -48,7 +48,7 @@ mixin content()
                         .card-header.bg-dark.text-white
                             h2.card-title= ng('app.title')
                             .ml-auto 
-                                button.btn.btn-sm.btn-dark.mr-1(ng-click="info.apps.remove(app)")
+                                button.btn.btn-sm.btn-dark.mr-1(ng-click="event.click.trash(app)")
                                     i.fas.fa-trash
                                 button.btn.btn-sm.btn-dark.mr-1(ng-click="event.click.item(app)")
                                     i.fas.fa-edit
@@ -124,6 +124,16 @@ mixin content()
                 .modal-body.p-0
                     .code-preview(style="max-width: none; width: 100%; height: 100%;")
                         iframe#dataprocess-iframe(style="height: 100%;")
+
+    #modal-delete.modal.fade(tabindex="-1")
+        .modal-dialog.modal-sm(role='document')
+            .modal-content
+                .modal-body
+                    .modal-title Delete Dataset
+                    div Once deleted, it cannot be restored. Are you sure you want to delete?
+                .modal-footer
+                    button.btn.btn-link.link-secondary.mr-auto(type='button' data-dismiss='modal') Cancel
+                    button.btn.btn-danger(type='button' ng-click="event.click.delete(selected)") Delete
 
     style.
         iframe {
