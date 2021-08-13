@@ -86,7 +86,9 @@ var content_controller = function ($scope, $timeout) {
         $.post('/api/update/' + dataset_id, { data: JSON.stringify(data) }, function (res) {
             if (cb) return cb(res);
             if (res.code == 200) {
-                return toastr.success('저장되었습니다');
+                // return toastr.success('저장되었습니다');
+                location.reload();
+                return;
             }
             toastr.error('오류가 발생하였습니다.');
         });

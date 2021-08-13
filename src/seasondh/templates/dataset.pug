@@ -81,6 +81,12 @@ mixin content()
 
                 .card.card-sm.mb-3
                     .card-header.p-2.pl-3.pr-3
+                        span Description
+                    .card-body 
+                        textarea.form-control(rows=5 ng-model="info.description")
+
+                .card.card-sm.mb-3
+                    .card-header.p-2.pl-3.pr-3
                         span Save Dataset
                     .card-body 
                         button.btn.btn-dark.btn-block(ng-click="event.save()") Save
@@ -103,6 +109,9 @@ mixin content()
                     .card-body
                         button.btn.btn-outline-danger.btn-block(ng-if="!allow_delete" ng-click="event.delete()") Delete
                         button.btn.btn-danger.btn-block(ng-if="allow_delete" ng-click="event.delete()") Delete
+
+                .text-center 
+                    span.text-muted= "last updated at " + ng('info.updated')
 
     .modal.fade#modal-dataprocess(tabindex="-1" aria-labelledby="modal-dataprocess" aria-hidden="true")
         .modal-dialog.modal-lg.fullscreen(role='document')

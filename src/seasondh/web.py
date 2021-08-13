@@ -62,6 +62,11 @@ def acl():
     if 'active' not in flask.session or flask.session['active'] != True:
         flask.abort(401)
 
+@app.before_request
+def make_session_permanent():
+    flask.session.permanent = True
+    app.permanent_session_lifetime = datetime.timedelta(minutes=14400)
+
 @app.after_request
 def add_header(response):
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -99,7 +104,7 @@ def app_(dataset_id, app_id):
     acl()
     return flask.render_template("app.pug", ng=ng, dataset_id=dataset_id, app_id=app_id)
 
-# api
+# /api/auth
 @app.route('/api/auth/login', methods=['POST'])
 def api_auth_login():
     password = dict(flask.request.values)['password']
@@ -113,6 +118,7 @@ def api_auth_logout():
     flask.session.clear()
     return flask.redirect('/')
 
+# /api actions
 @app.route('/api/create')
 def api_create():
     acl()
@@ -158,8 +164,18 @@ def api_iframe(dataset_id, app_id):
 def api_exports(dataset_id):
     acl()
     info = fs_workspace.read_json(f"{dataset_id}/seasondh.json")
+
+    updated = datetime.datetime.now()
+    try:
+        if 'updated' in info: 
+            updated = datetime.datetime.strptime(info['updated'], '%Y-%m-%d %H:%M:%S')
+    except:
+        pass
+    
+    updated = updated.strftime('%Y%m%d_%H%M%S')
+
     title = info['title']
-    title = urllib.parse.quote(title)
+    title = urllib.parse.quote(title) + '_' + updated
     
     return flask.Response(json.dumps(info, indent=4, sort_keys=True), 
             mimetype='application/json',
@@ -183,16 +199,16 @@ def api_export(dataset_id, app_id):
             mimetype='application/json',
             headers={'Content-Disposition': f'attachment;filename={app_mode}.{app_id}.json'})
 
-
 @app.route('/api/update/<dataset_id>', methods = ['POST'])
 def api_update(dataset_id):
     acl()
     info = json.loads(dict(flask.request.values)['data'])
     info['id'] = dataset_id
+    info['updated'] = datetime.datetime.now()
     fs_workspace.write_json(f"{dataset_id}/seasondh.json", info)
     return message_builder(200, True)
 
-
+# /api/dataset
 @app.route('/api/dataset/info/<dataset_id>', methods = ['POST'])
 def api_dataset_info(dataset_id):
     acl()
@@ -202,7 +218,6 @@ def api_dataset_info(dataset_id):
         info = dict()
     info['id'] = dataset_id
     return message_builder(200, info)
-
 
 @app.route('/api/dataset/list', methods = ['POST'])
 def api_dataset_list():
@@ -217,12 +232,14 @@ def api_dataset_list():
                 tmp['id'] = item
                 if 'title' in d:
                     tmp['title'] = d['title']
+                    if 'description' in d: tmp['description'] = d['description']
+                    if 'updated' in d: tmp['updated'] = d['updated']
                 result.append(tmp)
         except:
             pass
     return message_builder(200, result)
 
-
+# api view
 @app.route('/api/view/function/<dataset_id>/<app_id>/<fnname>', methods=['GET', 'POST'])
 def api_dataset_functions(dataset_id, app_id, fnname):
     acl()

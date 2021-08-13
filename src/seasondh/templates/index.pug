@@ -28,10 +28,16 @@ mixin content()
                         tr 
                             th Dataset Title
                             th Dataset ID
+                            th Updated
                     tbody 
                         tr(ng-repeat="item in data.list" ng-click="event.click(item.id)")
-                            td(style="cursor: pointer;")= ng('item.title')
-                            td(style="cursor: pointer; width: 260px;")= ng('item.id')
+                            td(style="cursor: pointer;")
+                                .mb-1= ng('item.title')
+                                span.text-muted= ng('item.description')
+
+                            td(style="cursor: pointer; width: 260px; vertical-align: top;")= ng('item.id')
+                            td.text-right(style="cursor: pointer; width: 160px; vertical-align: top;")
+                                span.text-muted= ng('item.updated')
                             
     script(src='/resources/view/js/index.js')
     

@@ -4,9 +4,8 @@ var content_controller = function ($scope, $timeout) {
 
     $scope.event.list = function () {
         $.post('/api/dataset/list', function (res) {
+            console.log(res.data);
             $scope.data.list = res.data;
-            console.log($scope.data.list);
-
             $timeout();
         });
     }
