@@ -233,3 +233,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+iframe {
+    border: none;
+    width: 100%;
+}

@@ -2,17 +2,6 @@ var content_controller = function ($scope, $timeout, $sce) {
     _builder($scope, $timeout);
     $scope.trustAsHtml = $sce.trustAsHtml;
 
-    function makeid(length) {
-        var result = '';
-        var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        var charactersLength = characters.length;
-        for (var i = 0; i < length; i++) {
-            result += characters.charAt(Math.floor(Math.random() *
-                charactersLength));
-        }
-        return result;
-    }
-
     var option_builder = function () {
         $scope.options = {};
         $scope.options.layout = 2;
@@ -25,7 +14,7 @@ var content_controller = function ($scope, $timeout, $sce) {
         $timeout()
     }
 
-    var _cache = cache_builder('datahub.app.editor.' + dataset_id + '.' + app_id);
+    var _cache = cache_builder('datahub.app.editor.' + workflow_id + '.' + app_id);
     $scope.options = _cache.get();
     if (!$scope.options) option_builder();
     $scope.$watch('options', function () {
@@ -144,19 +133,12 @@ var content_controller = function ($scope, $timeout, $sce) {
     }
 
     $scope.event.info = function () {
-        $.post('/api/dataset/info/' + dataset_id, function (res) {
-            $scope.dataset_info = res.data;
+        $.post('/api/workflow/info/' + workflow_id, function (res) {
+            $scope.workflow_info = res.data;            
             try {
-                if ($scope.dataset_info.dataloader.id == app_id) {
-                    $scope.info = $scope.dataset_info.dataloader;
-                }
-            } catch (e) {
-            }
-
-            try {
-                for (var i = 0; i < $scope.dataset_info.apps.length; i++) {
-                    if ($scope.dataset_info.apps[i].id == app_id) {
-                        $scope.info = $scope.dataset_info.apps[i];
+                for (var i = 0; i < $scope.workflow_info.apps.length; i++) {
+                    if ($scope.workflow_info.apps[i].__id__ == app_id) {
+                        $scope.info = $scope.workflow_info.apps[i];
                     }
                 }
             } catch (e) {
@@ -173,33 +155,13 @@ var content_controller = function ($scope, $timeout, $sce) {
         $timeout();
     }
 
-    var logger = function (code, msg) {
-        $scope.serverlogs.push(msg);
-        $timeout(function () {
-            setTimeout(function () {
-                $('#serverlog-debug').scrollTop(10000000);
-            }, 100);
-        });
-    }
-
     $scope.event.iframe = function (findurl) {
-        var url = "/api/iframe/" + dataset_id + "/" + app_id + '?' + new Date().getTime();
+        var url = "/api/iframe/" + workflow_id + "/" + app_id + '?' + new Date().getTime();
         if (findurl) {
             return url;
         }
         $timeout(function () {
             $('iframe').attr('src', url);
-            var iframes = $('iframe');
-            for (var i = 0; i < iframes.length; i++) {
-                $(iframes[i]).unbind();
-                $(iframes[i]).on('load', function () {
-                    this.contentWindow.API.logger = logger;
-                    for (var j = 0; j < this.contentWindow.API.logger_cache.length; j++) {
-                        logger(this.contentWindow.API.logger_cache[j][0], this.contentWindow.API.logger_cache[j][1]);
-                    }
-                    this.contentWindow.API.logger_cache = [];
-                });
-            }
         });
     };
 
@@ -214,10 +176,10 @@ var content_controller = function ($scope, $timeout, $sce) {
     }
 
     $scope.event.save = function (cb) {
-        var data = angular.copy($scope.dataset_info);
+        var data = angular.copy($scope.workflow_info);
         data = JSON.stringify(data);
         data = data.replace(/\\t/gim, '  ');
-        $.post('/api/update/' + dataset_id, { data: data }, function (res) {
+        $.post('/api/update/' + workflow_id, { data: data }, function (res) {
             $scope.event.iframe();
             if (cb) return cb(res);
             if (res.code == 200) {

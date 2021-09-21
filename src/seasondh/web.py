@@ -8,22 +8,22 @@ import traceback
 import datetime
 import urllib
 
-from .base import randomstring, Spawner
-from .dataset import dataset as seasondh_dataset
-from .storage import FileSystem
+from .util import randomstring, Storage, stdClass
+from .workflow import workflow as seasondh_workflow
 
 WORKSPACE_PATH = os.getcwd()
-
 WEB_ROOT = os.path.dirname(os.path.realpath(__file__))
 WEB_RESOURCE = os.path.join(WEB_ROOT, 'resources')
-
-fs_workspace = FileSystem(WORKSPACE_PATH)
+fs_workspace = Storage(WORKSPACE_PATH)
 
 # build flask
 app = flask.Flask(__name__, static_url_path='')
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 log = logging.getLogger('werkzeug')
 log.disabled = True
+
+app.jinja_env.variable_start_string = "{$"
+app.jinja_env.variable_end_string = "$}"       
 app.jinja_env.add_extension('pypugjs.ext.jinja.PyPugJSExtension')
 
 try:
@@ -41,9 +41,9 @@ def json_default(value):
         return value.strftime('%Y-%m-%d %H:%M:%S') 
     raise str(value)
 
-def message_builder(code, data, log=None):
+def message_builder(code, data):
     return flask.Response(
-        response=json.dumps({ 'code': code, 'data': data, 'log': log }, default=json_default),
+        response=json.dumps({ 'code': code, 'data': data }, default=json_default),
         status=200,
         mimetype='application/json'
     )
@@ -51,9 +51,6 @@ def message_builder(code, data, log=None):
 def build_dataset_args(app_id):
     kwargs = dict()
     return kwargs
-
-def ng(name):
-    return '{{' + str(name) + '}}'
 
 def acl():
     if 'password' not in config:
@@ -85,24 +82,22 @@ def resources(path):
 @app.route('/')
 def index():
     if 'password' not in config:
-        return flask.render_template("index.pug", ng=ng)
+        return flask.render_template("index.pug")
             
     if 'active' not in flask.session or flask.session['active'] != True:
-        return flask.render_template("login.pug", ng=ng)
+        return flask.render_template("login.pug")
 
-    return flask.render_template("index.pug", ng=ng)
+    return flask.render_template("index.pug")
 
-
-@app.route('/dataset/<dataset_id>')
-def dataset_(dataset_id):
+@app.route('/workflow/<workflow_id>')
+def workflow_(workflow_id):
     acl()
-    return flask.render_template("dataset.pug", ng=ng, dataset_id=dataset_id)
+    return flask.render_template("workflow.pug", workflow_id=workflow_id)
 
-
-@app.route('/app/<dataset_id>/<app_id>')
-def app_(dataset_id, app_id):
+@app.route('/app/<workflow_id>/<app_id>')
+def app_(workflow_id, app_id):
     acl()
-    return flask.render_template("app.pug", ng=ng, dataset_id=dataset_id, app_id=app_id)
+    return flask.render_template("app.pug", workflow_id=workflow_id, app_id=app_id)
 
 # /api/auth
 @app.route('/api/auth/login', methods=['POST'])
@@ -126,44 +121,32 @@ def api_create():
     newid = randomstring(32)
     while newid in files:
         newid = randomstring(32)
-    return flask.redirect(f'/dataset/{newid}')
+    return flask.redirect(f'/workflow/{newid}')
 
-@app.route('/api/delete/<dataset_id>')
-def api_delete(dataset_id):
+@app.route('/api/delete/<workflow_id>')
+def api_delete(workflow_id):
     acl()
-    if dataset_id is None or len(dataset_id) == 0:
+    if workflow_id is None or len(workflow_id) == 0:
         return flask.redirect('/')
 
-    fs_workspace.delete(dataset_id)
+    fs_workspace.delete(workflow_id)
     return flask.redirect('/')
 
-@app.route('/api/iframe/<dataset_id>/<app_id>')
-def api_iframe(dataset_id, app_id):
+@app.route('/api/iframe/<workflow_id>/<app_id>')
+def api_iframe(workflow_id, app_id):
     acl()
+    workflow_path = os.path.join(WORKSPACE_PATH, workflow_id)
+    workflow = seasondh_workflow(basepath=workflow_path)
+    app = workflow.app(app_id)
+    config = {}
+    config['API_URL'] = '/api/view/function'
+    view = app.view(config)
+    return flask.render_template("iframe.pug", workflow_id=workflow_id, app_id=app_id, view=view)
 
-    try:
-        proc = Spawner()
-        proc.kill(dataset_id, app_id)
-    except:
-        pass
-
-    info = fs_workspace.read_json(f"{dataset_id}/seasondh.json")
-    app = None
-    if 'dataloader' in info:
-        if info['dataloader']['id'] == app_id:
-            app = info['dataloader']
-    if app is None and 'apps' in info:
-        for _app in info['apps']:
-            if _app['id'] == app_id:
-                app = _app
-
-    return flask.render_template("iframe.pug", ng=ng, dataset_id=dataset_id, app_id=app_id, info=app)
-
-
-@app.route('/api/exports/<dataset_id>')
-def api_exports(dataset_id):
+@app.route('/api/exports/<workflow_id>')
+def api_exports(workflow_id):
     acl()
-    info = fs_workspace.read_json(f"{dataset_id}/seasondh.json")
+    info = fs_workspace.read_json(f"{workflow_id}/seasondh.json")
 
     updated = datetime.datetime.now()
     try:
@@ -181,10 +164,10 @@ def api_exports(dataset_id):
             mimetype='application/json',
             headers={'Content-Disposition': f'attachment;filename={title}.json'})
 
-@app.route('/api/export/<dataset_id>/<app_id>')
-def api_export(dataset_id, app_id):
+@app.route('/api/export/<workflow_id>/<app_id>')
+def api_export(workflow_id, app_id):
     acl()
-    info = fs_workspace.read_json(f"{dataset_id}/seasondh.json")
+    info = fs_workspace.read_json(f"{workflow_id}/seasondh.json")
     app = None
     if 'dataloader' in info:
         if info['dataloader']['id'] == app_id:
@@ -199,28 +182,31 @@ def api_export(dataset_id, app_id):
             mimetype='application/json',
             headers={'Content-Disposition': f'attachment;filename={app_mode}.{app_id}.json'})
 
-@app.route('/api/update/<dataset_id>', methods = ['POST'])
-def api_update(dataset_id):
+@app.route('/api/update/<workflow_id>', methods = ['POST'])
+def api_update(workflow_id):
     acl()
     info = json.loads(dict(flask.request.values)['data'])
-    info['id'] = dataset_id
+    info['id'] = workflow_id
     info['updated'] = datetime.datetime.now()
-    fs_workspace.write_json(f"{dataset_id}/seasondh.json", info)
+    
+    workflow_path = os.path.join(WORKSPACE_PATH, workflow_id)
+    workflow = seasondh_workflow(basepath=workflow_path)
+
+    workflow.update(info)
     return message_builder(200, True)
 
-# /api/dataset
-@app.route('/api/dataset/info/<dataset_id>', methods = ['POST'])
-def api_dataset_info(dataset_id):
+# /api/workflow
+@app.route('/api/workflow/info/<workflow_id>', methods = ['POST'])
+def api_workflow_info(workflow_id):
     acl()
-    try:
-        info = fs_workspace.read_json(f"{dataset_id}/seasondh.json")
-    except:
-        info = dict()
-    info['id'] = dataset_id
+    workflow_path = os.path.join(WORKSPACE_PATH, workflow_id)
+    workflow = seasondh_workflow(basepath=workflow_path)
+    info = workflow.get()
+    info['id'] = workflow_id
     return message_builder(200, info)
 
-@app.route('/api/dataset/list', methods = ['POST'])
-def api_dataset_list():
+@app.route('/api/workflow/list', methods=['GET', 'POST'])
+def api_workflow_list():
     acl()
     files = fs_workspace.files()
     result = []
@@ -240,51 +226,19 @@ def api_dataset_list():
     return message_builder(200, result)
 
 # api view
-@app.route('/api/view/function/<dataset_id>/<app_id>/<fnname>', methods=['GET', 'POST'])
-def api_dataset_functions(dataset_id, app_id, fnname):
+@app.route('/api/view/function/<workflow_id>/<app_id>/<fnname>', methods=['GET', 'POST'])
+def api_dataset_functions(workflow_id, app_id, fnname):
     acl()
+    
+    workflow_path = os.path.join(WORKSPACE_PATH, workflow_id)
+    workflow = seasondh_workflow(basepath=workflow_path)
+    app = workflow.app(app_id)
 
-    logs = []
-    try:
-        info = fs_workspace.read_json(f"{dataset_id}/seasondh.json")
-        app = None
-        if 'dataloader' in info:
-            if info['dataloader']['id'] == app_id:
-                app = info['dataloader']
-        if app is None and 'apps' in info:
-            for _app in info['apps']:
-                if _app['id'] == app_id:
-                    app = _app
+    framework = stdClass()
+    framework['request'] = flask.request
+    framework['query'] = dict(flask.request.values)
+    framework['files'] = flask.request.files.getlist('file[]')
+    framework['response'] = message_builder
 
-        if app is None:
-            return message_builder(404, 'App Not Found')
-
-        view = app['view']
-        view_api = view['api']
-        
-        # define parameters
-        dataset = seasondh_dataset(os.path.join(WORKSPACE_PATH, dataset_id))
-        kwargs = {}
-        if 'mode' in app and app['mode'] == 'dataloader': kwargs['storage'] = dataset.get_storage(app_id='dataloader')
-        else: kwargs['storage'] = dataset.get_storage(app_id=app_id)
-        kwargs['app_id'] = app_id
-        kwargs['dataset_id'] = dataset_id
-        kwargs['storage_path'] = WORKSPACE_PATH
-        kwargs['dataset'] = dataset
-        kwargs['request'] = flask.request
-        kwargs['query'] = dict(flask.request.values)
-        kwargs['files'] = flask.request.files.getlist('file[]')
-
-        proc = Spawner()
-        proc.define(view_api)
-        result, stdout, stderr = proc.run(dataset_id, app_id, fnname, kwargs=kwargs)
-
-        if stdout is not None and stdout != "": 
-            logs.append(stdout)
-        if stderr is not None and stderr != "": 
-            logs.append("<pre style='color: red; margin: 0 !important; padding: 0 !important; display: block;'>" + stderr +  "</pre>")
-
-        return message_builder(200, result, "\n".join(logs))
-    except Exception as e:
-        logs.append("<pre style='color: red; margin: 0 !important; padding: 0 !important; display: block;'>" + traceback.format_exc() + "</pre>")
-        return message_builder(500, None, "\n".join(logs))
+    result = app.view_api(fnname, framework)
+    return result

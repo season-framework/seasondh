@@ -1,36 +1,35 @@
 mixin codearea(tab)
-    textarea.form-control(ng-if="options.tab.{{tab}}_val == 'html'" ng-model="info.view.html" ui-codemirror-opts="codemirror('htmlmixed')" ui-codemirror)
-    textarea.form-control(ng-if="options.tab.{{tab}}_val == 'js'" ng-model="info.view.js" ui-codemirror-opts="codemirror('javascript')" ui-codemirror)
-    textarea.form-control(ng-if="options.tab.{{tab}}_val == 'css'" ng-model="info.view.css" ui-codemirror-opts="codemirror('css')" ui-codemirror)
-    textarea.form-control(ng-if="options.tab.{{tab}}_val == 'api'" ng-model="info.view.api" ui-codemirror-opts="codemirror('python')" ui-codemirror)
-    textarea.form-control(ng-if="options.tab.{{tab}}_val == 'code'" ng-model="info.code" ui-codemirror-opts="codemirror('python')" ui-codemirror)
-    .code-preview(ng-if="options.tab.{{tab}}_val == 'preview'" style="max-width: none; width: 100%; height: 100%;")
-        iframe(style="height: 100%;" ng-hide="status_drag == 'unselectable'")
+    div(ng-show="options.tab.{$tab$}_val == 'html'" ng-model="info.html" ui-monaco-opts="monaco('pug')" ui-monaco)
+    div(ng-show="options.tab.{$tab$}_val == 'js'" ng-model="info.js" ui-monaco-opts="monaco('javascript')" ui-monaco)
+    div(ng-show="options.tab.{$tab$}_val == 'css'" ng-model="info.css" ui-monaco-opts="monaco('less')" ui-monaco)
+    div(ng-show="options.tab.{$tab$}_val == 'view_api'" ng-model="info.view_api" ui-monaco-opts="monaco('python')" ui-monaco)
+    div(ng-show="options.tab.{$tab$}_val == 'batch_api'" ng-model="info.batch_api" ui-monaco-opts="monaco('python')" ui-monaco)
+    .code-preview(ng-if="options.tab.{$tab$}_val == 'preview'" style="max-width: none; width: 100%; height: 100%;")
+        iframe.preview(style="height: 100%;" ng-hide="status_drag == 'unselectable'")
         table(ng-if="status_drag == 'unselectable'" style="width: 100%; height: 100%;")
             tr 
                 td(style="text-align: center; vertical-align: middle;")
                     .spinner-grow.text-blue(style="width: 120px; height: 120px;")
-    .code-preview#serverlog-debug(ng-if="options.tab.{{tab}}_val == 'debug'" style="position: relative; max-width: none; width: 100%; height: 100%; background: black; color: white; overflow: auto;")
-        .debug-area(style="margin: 8px;")
-            pre(style="margin: 0 !important; padding: 0 !important; display: block;" ng-repeat="log in serverlogs track by $index" ng-bind-html="trustAsHtml(log)")
-
+                    
 mixin codeselect(tab)
     - if tab != 'tab5'
-        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'html'" ng-class="options.tab.{{tab}}_val == 'html' ? 'btn-white' : 'btn-dark'") HTML
-        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'js'" ng-class="options.tab.{{tab}}_val == 'js' ? 'btn-white' : 'btn-dark'") JS
-        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'css'" ng-class="options.tab.{{tab}}_val == 'css' ? 'btn-white' : 'btn-dark'") CSS
-        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'api'" ng-class="options.tab.{{tab}}_val == 'api' ? 'btn-white' : 'btn-dark'") View API
-        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'code'" ng-class="options.tab.{{tab}}_val == 'code' ? 'btn-white' : 'btn-dark'") Dataset
-        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'preview'; event.iframe();" ng-class="options.tab.{{tab}}_val == 'preview' ? 'btn-white' : 'btn-dark'") Preview
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{$tab$}_val = 'html'" ng-class="options.tab.{$tab$}_val == 'html' ? 'btn-white' : 'btn-dark'") PUG
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{$tab$}_val = 'js'" ng-class="options.tab.{$tab$}_val == 'js' ? 'btn-white' : 'btn-dark'") JS
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{$tab$}_val = 'css'" ng-class="options.tab.{$tab$}_val == 'css' ? 'btn-white' : 'btn-dark'") CSS
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{$tab$}_val = 'view_api'" ng-class="options.tab.{$tab$}_val == 'view_api' ? 'btn-white' : 'btn-dark'") View API
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{$tab$}_val = 'batch_api'" ng-class="options.tab.{$tab$}_val == 'batch_api' ? 'btn-white' : 'btn-dark'") Batch API
+        
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{$tab$}_val = 'preview'; event.iframe();" ng-class="options.tab.{$tab$}_val == 'preview' ? 'btn-white' : 'btn-dark'") Preview
     - else
-        button.btn.btn-square.btn-sm.btn-dark.mr-1(ng-click="event.clear_log()") Log Clear
-        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'debug'" ng-class="options.tab.{{tab}}_val == 'debug' ? 'btn-white' : 'btn-dark'") Debug
-        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{{tab}}_val = 'preview'; event.iframe();" ng-class="options.tab.{{tab}}_val == 'preview' ? 'btn-white' : 'btn-dark'") Preview
+        button.btn.btn-square.btn-sm.mr-1(ng-click="options.tab.{$tab$}_val = 'preview'; event.iframe();" ng-class="options.tab.{$tab$}_val == 'preview' ? 'btn-white' : 'btn-dark'") Preview
 
 mixin content()
+    script(src='/resources/libs/monaco/min/vs/loader.js')
     script.
-        var dataset_id = '{{dataset_id}}';
-        var app_id = '{{app_id}}';
+        require.config({ paths: { vs: '/resources/libs/monaco/min/vs' } });
+    script.
+        var workflow_id = '{$workflow_id$}';
+        var app_id = '{$app_id$}';
 
     .fixed-top
         header.navbar.navbar-expand-md.navbar-light
@@ -47,10 +46,11 @@ mixin content()
                     ul.navbar-nav
                     .navbar-nav.flex-row.order-md-last.mr-2
                         li.nav-item
-                            a.nav-link.btn.btn-sm.text-white.btn-dark.btn-pill(href='/dataset/{{dataset_id}}')
+                            a.nav-link.btn.btn-sm.text-white.btn-dark.btn-pill(href='/workflow/{$workflow_id$}')
                                 span.nav-link-title.bold X
 
-    .panel-layout(class="{{ng('options.sidemenu ? \'sidemenu-on\' : \'sidemenu-off\'')}}" ng-class="status_drag")
+
+    .panel-layout(class="{{options.sidemenu ? 'sidemenu-on' : 'sidemenu-off'}}" ng-class="status_drag")
         .panel-menu.bg-dark
             .menu-layout.p-3
                 h3.text-white.mb-3 
@@ -152,7 +152,7 @@ mixin content()
                         i.fas.fa-upload
                         span.minify.ml-2 Import App
 
-                    a.btn.btn-white.btn-block.mb-3(href="/api/export/{{dataset_id}}/{{app_id}}" target="_blank") 
+                    a.btn.btn-white.btn-block.mb-3(href="/api/export/{$workflow_id$}/{$app_id$}" target="_blank") 
                         i.fas.fa-download
                         span.minify.ml-2 Export App
 
@@ -195,10 +195,10 @@ mixin content()
                                 +codearea('tab4')
 
                     tr.gutter.g-t(ng-if="[5,6,7,8].includes(options.layout)" target="tab-5" ng-drag="event.drag")
-                        td(colspan="{{ng('(options.layout - 4) + (options.layout - 5)')}}")
+                        td(colspan="{{(options.layout - 4) + (options.layout - 5)}}")
 
                     tr.code-tr.code-bottom(ng-if="[5,6,7,8].includes(options.layout)")
-                        td.tab-5(colspan="{{ng('(options.layout - 4) + (options.layout - 5)')}}")
+                        td.tab-5(colspan="{{(options.layout - 4) + (options.layout - 5)}}")
                             .code-input(style='height: 100%;')
                                 +codearea('tab5')
 
@@ -207,9 +207,19 @@ mixin content()
                     tr
                         td.tab-5.text-right(ng-if="[5,6,7,8].includes(options.layout)")
                             +codeselect('tab5')
+    
+    #modal-delete.modal.fade(tabindex="-1")
+        .modal-dialog.modal-sm(role='document')
+            .modal-content
+                .modal-body
+                    .modal-title Delete
+                    div Once deleted, it cannot be restored. Are you sure you want to delete?
+                .modal-footer
+                    button.btn.btn-link.link-secondary.mr-auto(type='button' data-dismiss='modal') Cancel
+                    button.btn.btn-danger(type='button' ng-click="event.delete()") Delete
 
     link(href='/resources/view/css/app.css' rel='stylesheet')
     script(src='/resources/view/js/app.js')
-    
+
 include component/layout
 +layout

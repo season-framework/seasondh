@@ -6,13 +6,12 @@ ROOT_PATH = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.realpath(os.path.join(ROOT_PATH, '..')))
 __package__ = "seasondh"
 
-from .base import randomstring
-from .storage import FileSystem
+from .util import randomstring, Storage
 from .version import VERSION_STRING
 
 VERSION = __version__ = version = VERSION_STRING
 WORKSPACE_PATH = os.getcwd()
-fs_workspace = FileSystem(WORKSPACE_PATH)
+fs_workspace = Storage(WORKSPACE_PATH)
 
 import argh
 from argh import arg, expects_obj

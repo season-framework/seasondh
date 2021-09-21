@@ -32,12 +32,12 @@ mixin content()
                     tbody 
                         tr(ng-repeat="item in data.list" ng-click="event.click(item.id)")
                             td(style="cursor: pointer;")
-                                .mb-1= ng('item.title')
-                                span.text-muted= ng('item.description')
+                                .mb-1 {{item.title}}
+                                span.text-muted {{item.description}}
 
-                            td(style="cursor: pointer; width: 260px; vertical-align: top;")= ng('item.id')
+                            td(style="cursor: pointer; width: 260px; vertical-align: top;") {{item.id}}
                             td.text-right(style="cursor: pointer; width: 160px; vertical-align: top;")
-                                span.text-muted= ng('item.updated')
+                                span.text-muted {{item.updated}}
                             
     script(src='/resources/view/js/index.js')
     
