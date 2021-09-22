@@ -57,7 +57,7 @@ var content_controller = function ($scope, $timeout) {
             css: ""
         });
 
-        $timeout();
+        $scope.event.save();
     }
 
     $scope.event.save = function (cb) {
@@ -165,8 +165,7 @@ var content_controller = function ($scope, $timeout) {
     var fileinput = document.getElementById('import-file');
     fileinput.addEventListener("change", async event => {
         const json = JSON.parse(await fileinput.files[0].text());
-        json.id = $scope.info.id;
-        $scope.info = json;
+        $scope.info.apps = json.apps;
         $scope.event.save(function () {
             location.reload();
         });

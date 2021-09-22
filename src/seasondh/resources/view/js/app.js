@@ -197,13 +197,16 @@ var content_controller = function ($scope, $timeout, $sce) {
     fileinput.addEventListener("change", async event => {
         const json = JSON.parse(await fileinput.files[0].text());
         if (json.mode != $scope.info.mode) return;
+        
+        json.title = $scope.info.title;
+        json.about = $scope.info.about;
+        json.tags = $scope.info.tags;
+        json.id = $scope.info.id;
+        json.__id__ = $scope.info.__id__;
 
-        $scope.info.title = json.title;
-        $scope.info.about = json.about;
-        $scope.info.tags = json.tags;
-        $scope.info.view = json.view;
-        $scope.info.code = json.code;
-
+        for (var key in json) {
+            $scope.info[key] = json[key];
+        }
         $scope.event.save();
     });
 

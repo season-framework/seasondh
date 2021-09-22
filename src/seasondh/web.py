@@ -146,20 +146,20 @@ def api_iframe(workflow_id, app_id):
 @app.route('/api/exports/<workflow_id>')
 def api_exports(workflow_id):
     acl()
-    info = fs_workspace.read_json(f"{workflow_id}/seasondh.json")
-
+    workflow_path = os.path.join(WORKSPACE_PATH, workflow_id)
+    workflow = seasondh_workflow(basepath=workflow_path)
+    info = workflow.get()
+    
     updated = datetime.datetime.now()
     try:
         if 'updated' in info: 
             updated = datetime.datetime.strptime(info['updated'], '%Y-%m-%d %H:%M:%S')
     except:
         pass
-    
     updated = updated.strftime('%Y%m%d_%H%M%S')
 
     title = info['title']
     title = urllib.parse.quote(title) + '_' + updated
-    
     return flask.Response(json.dumps(info, indent=4, sort_keys=True), 
             mimetype='application/json',
             headers={'Content-Disposition': f'attachment;filename={title}.json'})
@@ -167,20 +167,16 @@ def api_exports(workflow_id):
 @app.route('/api/export/<workflow_id>/<app_id>')
 def api_export(workflow_id, app_id):
     acl()
-    info = fs_workspace.read_json(f"{workflow_id}/seasondh.json")
-    app = None
-    if 'dataloader' in info:
-        if info['dataloader']['id'] == app_id:
-            app = info['dataloader']
-    if app is None and 'apps' in info:
-        for _app in info['apps']:
-            if _app['id'] == app_id:
-                app = _app
-
-    app_mode = app['mode']
-    return flask.Response(json.dumps(app), 
+    workflow_path = os.path.join(WORKSPACE_PATH, workflow_id)
+    workflow = seasondh_workflow(basepath=workflow_path)
+    app = workflow.app(app_id)
+    appinfo = app.to_dict()
+    title = app_id
+    if 'title' in appinfo: title = appinfo['title']
+    title = urllib.parse.quote(title)
+    return flask.Response(app.json(), 
             mimetype='application/json',
-            headers={'Content-Disposition': f'attachment;filename={app_mode}.{app_id}.json'})
+            headers={'Content-Disposition': f'attachment;filename={title}.json'})
 
 @app.route('/api/update/<workflow_id>', methods = ['POST'])
 def api_update(workflow_id):

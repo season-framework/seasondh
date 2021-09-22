@@ -1,5 +1,6 @@
 from .util import stdClass, Storage
 from .spawner import Spawner
+import json
 import copy
 import os
 import lesscpy
@@ -44,6 +45,7 @@ if(!window.season_datahub) {
 
 class app:
     def __init__(self, **kwargs):
+        self.__kwargs__ = kwargs
         kwargs = stdClass(kwargs)
         if '__id__' not in kwargs: raise Exception("`__id__` not in config")
         if 'path' not in kwargs: raise Exception("`path` not in config")
@@ -79,7 +81,7 @@ class app:
             fn = {'__file__': 'seasondh.app', '__name__': 'seasondh.app'}
             fn = stdClass(fn)
             exec(compile(code, 'seasondh.app', 'exec'), fn)
-        except:
+        except Exception as e:
             return stdClass()
         return fn
 
@@ -90,6 +92,17 @@ class app:
 
     def __len__(self):
         return self.length()
+
+    def to_dict(self):
+        appconfig = self.__kwargs__
+        if 'prev_app' in appconfig: del appconfig['prev_app']
+        if 'use_cache' in appconfig: del appconfig['use_cache']
+        if 'path' in appconfig: del appconfig['path']
+        return appconfig
+
+    def json(self):
+        appconfig = self.to_dict()
+        return json.dumps(appconfig, indent=4, sort_keys=True)
     
     def id(self):
         return self.__id__
