@@ -210,6 +210,9 @@ class app_instance:
         self.__app__ = app
         self.__batch_index__ = None
 
+    def index(self):
+        return self.__batch_index__
+
     def length(self):
         return len(self.__app__)
 

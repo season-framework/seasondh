@@ -52,6 +52,12 @@ class workflow:
     def __len__(self):
         return self.length()
 
+    def flush(self):
+        self.claer()
+
+    def clear(self):
+        self.storage.remove(".")
+
     def get(self):
         return self.__package__
 
@@ -106,4 +112,3 @@ class workflow:
 
     def length(self):
         return len(self.__instance__)
-        
