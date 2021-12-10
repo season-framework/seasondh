@@ -38,12 +38,10 @@ setup(
         'seasondh = seasondh.cmd:main [seasondh]',
     ]},
     install_requires=[
-        'flask',
         'argh',
         'psutil',
-        'pypugjs',
-        'lesscpy',
-        'pymysql',
+        'Pillow',
+        'numpy',
         'pandas'
     ],
     python_requires='>=3.6',
