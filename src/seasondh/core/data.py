@@ -25,6 +25,9 @@ class data:
         self.__data__.cached[key] = value
 
     def __getitem__(self, index):
+        if index not in self.__indexes__:
+            raise IndexError
+
         key = self.__indexes__[index]
 
         if type(key) == list:
@@ -40,13 +43,16 @@ class data:
             return self.__data__.cached[key]
 
         fs = self.fs
-        item = fs.read.pickle(str(key), None)
-        self.__data__.cached[key] = item
+        item = fs.read.pickle(str(key), ValueError)
+
+        if item is not ValueError:
+            self.__data__.cached[key] = item
+
         return item
 
     def __setitem__(self, index, value):
         if index < 0:
-            raise ValueError
+            raise IndexError
         key = self.__indexes__[index]
         self.__update__(key, value)
 
@@ -126,7 +132,9 @@ class data:
             res.append(self[i])
         return res
 
-    def exists(self, index):
+    def exists(self, index=None):
+        if index is None:
+            return self.fs.isdir()
         key = self.__indexes__[index]
         if key in self.__data__.updated:
             return True

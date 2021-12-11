@@ -22,8 +22,8 @@ class read:
         self.image.PIL = self.image.pillow = self.__image_pil__
         self.image.numpy = self.image.np = self.__image_numpy__
 
-    def __call__(self, filepath):
-        return self.text(filepath)
+    def __call__(self, filepath, default=DEFAULT_VALUE):
+        return self.text(filepath, default=default)
 
     def text(self, filepath, default=DEFAULT_VALUE):
         try:
@@ -236,10 +236,17 @@ class storage:
         except:
             return 0
 
-    def isfile(self, filepath):
+    def exists(self, filepath=""):
+        if self.isfile(filepath):
+            return True
+        if self.isdir(filepath):
+            return True
+        return False
+
+    def isfile(self, filepath=""):
         return os.path.isfile(self.abspath(filepath))
     
-    def isdir(self, filepath):
+    def isdir(self, filepath=""):
         return os.path.isdir(self.abspath(filepath))
 
     def __copy__(self, src, dest, ignore=None):

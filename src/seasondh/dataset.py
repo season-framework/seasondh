@@ -2,6 +2,7 @@ import datetime
 import seasondh as sd
 from seasondh.core import stage
 from seasondh.core import config
+from seasondh.core import data as sddata
 
 class dataset:
 
@@ -11,20 +12,9 @@ class dataset:
         self.__logger__ = logger
         self.config = config(**kwargs)
         
-        self.__data__ = None
-        self.__regist__ = list()
-        self.__builder__ = None
-
         fs = self.__storage__ = sd.util.storage(basepath)
 
-        self.stage = stage(self)
-
-        if fs.isfile("script.py"):
-            script = fs.read("script.py")
-            compiler = sd.util.compiler(seasondh=sd, dataset=self)
-            if logger is not None:
-                compiler.set_logger(logger)
-            compiler.compile(script)
+        self.init()
 
     # decorators
     # : dataset process decorators
@@ -78,14 +68,9 @@ class dataset:
 
     # list magic functions
     # : dataset as list
-    def __setitem__(self, index, value):
-        pass
-        
+    
     def __getitem__(self, index):
-        return
-
-    def __delitem__(self, index):
-        pass
+        return self.get(index)
 
     def __iter__(self):
         pass
@@ -99,60 +84,118 @@ class dataset:
         return data
 
     def __len__(self):
-        return len(self.__indexes__)
+        if self.readonly:
+            fs = self.__storage__.use("dataset")
+            data = sddata(fs)
+            if data.exists():
+                return len(data)
+            return 0
 
-    def process(self):
-        pass
+        last_stage = self.stage.last()
+        return len(last_stage.data)
 
     # general functions
     # : dataset functions
     # - use: change namespace of dataset
     # - update: save changed of dataset from cached
 
-    # def build(self):
-    #     if self.__builder__ is not None:
-    #         self.__builder__['process']()
+    def get(self, index):        
+        # if stage data not exists in dataset dir
+        if self.readonly:
+            fs = self.__storage__.use("dataset")
+            data = sddata(fs)
+            if data.exists():
+                try:        
+                    item = data[index]
+                except Exception as e:
+                    item = type(e)
 
-    # def process(self, mode="bulk"):
-    #     regists = self.__regist__
-    #     if len(regists) == 0:
-    #         return
+                if item not in [IndexError, ValueError]:
+                    return item
 
-    #     self.build()
+            raise IndexError
 
-    #     if mode == "online":
-    #         fs = self.__storage__.use("dataset").cd(self.namespace)
+        last_stage = self.stage.last()
+        err = None
 
-    #         try: online_pos = fs.read.pickle("__online__")
-    #         except: online_pos = -1
+        try:
+            item = last_stage.data[index]
+        except Exception as e:
+            err = e
+            item = type(e)
 
-    #         for position in range(len(self)):
-    #             if position <= online_pos:
-    #                 continue
+        if item in [IndexError, ValueError]:
+            self.stage.build()
+            for stage in self.stage:
+                stage(index)
+            item = last_stage.data[index]
+            self.stage.save()
+        elif err is not None:
+            raise err
 
-    #             self.__position__ = position
-    #             for stage in regists:
-    #                 func = stage['process']
-    #                 self.data(func())
+        return item
 
-    #             self.update()
-    #             fs.write.pickle("__online__", position)
+    def process(self):
+        fs = self.__storage__.use("dataset")
+        fs.delete()
+
+        build_data = self.stage.data.build()
         
-    #     else:
-    #         for stage in regists:
-    #             for position in range(len(self)):
-    #                 self.__position__ = position
-    #                 func = stage['process']
-    #                 self.data(func())
-    #         self.update()
+        data = sddata(fs)
+        data.set(build_data)
 
-    # def data(self):
-    #     if namespace is None:
-    #         namespace = self.namespace
+        for index in range(len(build_data)):
+            err = None
+            try:
+                item = self[index]
+            except Exception as e:
+                err = e
+                item = type(e)
+            
+            if item in [IndexError, ValueError]:
+                for stage in self.stage:
+                    stage(index)
+            elif err is not None:
+                raise err
+
+            last_stage = self.stage.last()
+            item = last_stage.data[index]
+            data[index] = item
         
-    #     if data is None:
-    #         return self[self.__position__]
-    #     self[self.__position__] = data
+        self.stage.save()
+        data.save()
+
+    def logger(self, *args):
+        logger = self.__logger__
+        if logger is not None:
+            logger(*args)
+
+    def init(self):
+        logger = self.__logger__
+
+        self.stage = stage(self)
+        self.__regist__ = list()
+        self.__builder__ = None
+        
+        script = self.script()
+
+        compiler = sd.util.compiler(seasondh=sd, dataset=self)
+        if logger is not None:
+            compiler.set_logger(logger)
+        compiler.compile(script)
+
+        self.readonly = False
+        if len(self.stage) == 0 or self.stage.last().data().exists() == False:
+            self.readonly = True
+
+    def script(self, script=None):
+        fs = self.__storage__
+        if script is None:
+            return fs.read("script.py", "")
+        
+        fs.write("script.py", script)
+        self.init()
+        return script
 
     def clear(self):
         fs = self.__storage__.use("dataset")

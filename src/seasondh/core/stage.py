@@ -1,6 +1,8 @@
 import datetime
+import traceback
+
 import seasondh as sd
-from seasondh.core import data
+from seasondh.core import data as sddata
 
 class _data:
     def __init__(self, stage):
@@ -16,6 +18,25 @@ class _data:
             cache = self.__cache__[namespace]
             cache.save()
 
+    def __call__(self, namespace=None):
+        return self.get(namespace=namespace)
+
+    def __getitem__(self, index):
+        data = self.get()
+        return data[index]
+
+    def __setitem__(self, index, value):
+        data = self.get()
+        data.__setitem__(index, value)
+
+    def __delitem__(self, index):
+        data = self.get()
+        data.__delitem__(index)
+
+    def __len__(self):
+        data = self.get()
+        return len(data)
+
     def get(self, namespace=None):
         stage = self.__stage__
 
@@ -26,7 +47,7 @@ class _data:
             return self.__cache__[namespace]
 
         fs = stage.__dataset__.__storage__.use(f"stage/{stage.namespace}")
-        item = data(fs)
+        item = sddata(fs)
         self.__cache__[stage.namespace] = item
         return item
 
@@ -36,7 +57,7 @@ class _data:
         
         stage = self.__stage__
         fs = stage.__dataset__.__storage__.use(f"stage/build")
-        item = data(fs)
+        item = sddata(fs)
         self.__build__ = item
         return item
 
@@ -79,10 +100,10 @@ class stage:
     def __len__(self):
         return len(self.__dataset__.__regist__)
 
-    def __call__(self, index=None, force=False):
+    def __call__(self, index=None, reload=False):
         if self.__index__ is None:
             return self.build()
-        return self.process(index, force=force)
+        return self.process(index, reload=reload)
         
     def get(self, index=None):
         if index == 'build': index = None
@@ -98,7 +119,7 @@ class stage:
             if index in namespaces:
                 index = namespaces.index(index)
             else:
-                raise ValueError
+                raise IndexError
 
         # find stage
         self.__index__ = index
@@ -107,31 +128,44 @@ class stage:
 
         return self
 
+    def last(self):
+        return self[-1]
+
     def build(self):
-        self.get()
-        data = self.data.build()
-        process = self.__current__['process']
-        process(data)
-        return data
-        
-    def process(self, index=None, force=False):
-        prev = self.data.prev()
-        data = self.data.get()
-        data.set(prev)
-        
-        process = self.__current__['process']
-
-        if index is None:
-            for item in prev:
-                item = process(item)
-            return prev
-
-        if force == False and data.exists(index):
+        try:
+            self.get()
+            data = self.data.build()
+            process = self.__current__['process']
+            process(data)
             return data
+        except Exception as e:
+            msg = traceback.format_exc()
+            self.__dataset__.logger(msg)
+            raise e
         
-        item = prev[index]
-        data[index] = process(item)
-        return data
+    def process(self, index=None, reload=False):
+        try:
+            prev = self.data.prev()
+            data = self.data.get()
+            data.set(prev)
+            
+            process = self.__current__['process']
+
+            if index is None:
+                for item in prev:
+                    item = process(item)
+                return prev
+
+            if reload == False and data.exists(index):
+                return data
+            
+            item = prev[index]
+            data[index] = process(item)
+            return data
+        except Exception as e:
+            msg = traceback.format_exc()
+            self.__dataset__.logger(msg)
+            raise e
 
     def namespaces(self):
         return [x['namespace'] for x in self.__dataset__.__regist__]
