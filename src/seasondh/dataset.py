@@ -113,7 +113,7 @@ class dataset:
                 if item not in [IndexError, ValueError]:
                     return item
 
-            raise IndexError
+            raise item
 
         last_stage = self.stage.last()
         err = None
@@ -132,6 +132,9 @@ class dataset:
             self.stage.save()
         elif err is not None:
             raise err
+
+        if item is ValueError:
+            raise ValueError
 
         return item
 

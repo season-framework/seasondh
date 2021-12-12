@@ -1,4 +1,8 @@
+from seasondh.util import stdClass
+
 import time
+import builtins
+
 _compile = compile
 _print = print
 
@@ -17,10 +21,20 @@ class compiler:
     def compile(self, code):
         kwargs = self.kwargs
         logger = self.logger
-        obj = globals()
-        obj['print'] = logger
 
-        for key in kwargs: obj[key] = kwargs[key]
-        exec(_compile(code, __name__, 'exec'), obj)
+        env = dict()
+        local_env = dict()
 
-        return obj
+        for key in kwargs: env[key] = kwargs[key]
+        env['__builtins__'] = builtins
+        
+        env['print'] = logger
+        exec(code, env, local_env)
+
+        codes = []
+        for key in local_env:
+            codes.append(f"__builtins__.{key} = {key}")
+        codes = "\n".join(codes)
+        exec(codes, env, local_env)  
+
+        return env

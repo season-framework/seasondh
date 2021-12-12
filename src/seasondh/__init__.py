@@ -3,3 +3,4 @@ VERSION = __version__ = __VERSION__= version
 
 from seasondh import util
 from seasondh.dataset import dataset
+from seasondh.process import process
